@@ -146,6 +146,7 @@ struct SettingsView: View {
             .toolbar(.hidden, for: .navigationBar)
             .keyboardDoneButton()
             .environment(\.editMode, $editMode)
+            .onAppear { store.interactor?.load(request: .init()) }
             .onChange(of: store.currencySymbol) { store.persistSettings() }
             .onChange(of: store.dailyFoodText) { store.persistSettings() }
             .onChange(of: store.apartmentText) { store.persistSettings() }
