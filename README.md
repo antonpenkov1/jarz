@@ -4,6 +4,12 @@
 
 Jarz is a money **planner**, not an expense tracker. Every payday you split your salary into jars (Food, Rent, Bills, Savings…), every purchase comes out of its jar — so at any moment you know exactly what you can still afford.
 
+## Screenshots
+
+| Home | Income | Revision | Settings |
+|---|---|---|---|
+| <img src="Screenshots/home.png" width="200" alt="Home — food day counter and jar balances"/> | <img src="Screenshots/income.png" width="200" alt="Income — salary distribution with auto-filled jars"/> | <img src="Screenshots/revision.png" width="200" alt="Revision — compare plan with real money"/> | <img src="Screenshots/settings.png" width="200" alt="Settings — budgets, currency and jars"/> |
+
 ## Features
 
 - **Daily food budget** — set a per-day amount; on payday Jarz sets aside 31 days' worth. The balance is shown as "what's left for the current day + how many full days are covered ahead", driven purely by the remaining money, not the calendar.
@@ -17,7 +23,7 @@ Jarz is a money **planner**, not an expense tracker. Every payday you split your
 
 - SwiftUI, iOS 17+
 - Clean Swift (VIP): every scene is Interactor → Presenter → ViewStore with Request/Response/ViewModel models
-- JSON persistence in Application Support (`StorageWorker`)
+- SwiftData persistence (`StorageWorker`); iCloud sync is code-ready but disabled until a paid developer account (`iCloudSyncEnabled` flag + entitlements in `project.yml`)
 - Project generated with [xcodegen](https://github.com/yonaskolb/XcodeGen)
 
 ## Building
