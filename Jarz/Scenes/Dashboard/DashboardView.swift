@@ -32,38 +32,50 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if let food = store.viewModel.foodCard {
-                    Section {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionLabel("Jarz")
+                        .padding(.top, 20)
+
+                    if let food = store.viewModel.foodCard {
                         NavigationLink(value: foodCategoryId) {
-                            foodCard(food)
+                            heroSection(food)
                         }
+                        .buttonStyle(.plain)
                     }
-                }
-                Section("Categories") {
+
+                    SectionLabel("Jars")
+                        .padding(.top, 44)
+                        .padding(.bottom, 4)
+
                     ForEach(store.viewModel.rows) { row in
                         NavigationLink(value: row.id) {
-                            HStack {
+                            HStack(alignment: .firstTextBaseline) {
                                 Text(row.name)
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(Theme.ink)
                                 Spacer()
-                                Text(row.balanceText)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(row.isNegative ? .red : .primary)
+                                AmountText(text: row.balanceText,
+                                           color: row.isNegative ? Theme.negative : Theme.ink)
                             }
+                            .padding(.vertical, 17)
                         }
+                        .buttonStyle(.plain)
+                        Hairline()
                     }
-                }
-                Section {
-                    HStack {
-                        Text("Total planned")
-                            .fontWeight(.semibold)
+
+                    HStack(alignment: .firstTextBaseline) {
+                        SectionLabel("Total planned")
                         Spacer()
-                        Text(store.viewModel.totalText)
-                            .fontWeight(.bold)
+                        AmountText(text: store.viewModel.totalText, size: 20)
                     }
+                    .padding(.top, 28)
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 40)
             }
-            .navigationTitle("Jarz")
+            .background(Theme.bg.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: UUID.self) { categoryId in
                 CategoryDetailConfigurator.makeView(categoryId: categoryId)
             }
@@ -72,35 +84,45 @@ struct DashboardView: View {
                 store.interactor?.load(request: .init())
             }
         }
+        .tint(Theme.ink)
     }
 
     // The food card links to the food category's detail screen. The id is not
     // part of the view model rows, so resolve it from settings directly.
     private var foodCategoryId: UUID {
-        StorageWorker.shared.state.settings.foodCategoryId ?? UUID()
+        StorageWorker.shared.settings().foodCategoryId ?? UUID()
     }
 
-    private func foodCard(_ food: Dashboard.Load.ViewModel.FoodCard) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+    private func heroSection(_ food: Dashboard.Load.ViewModel.FoodCard) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(food.name)
-                    .font(.headline)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Theme.ink)
                 Spacer()
-                Text(food.balanceText)
-                    .font(.headline)
-                    .foregroundStyle(food.isNegative ? .red : .primary)
+                AmountText(text: food.balanceText, color: Theme.secondary)
             }
-            Text(food.currentDayText)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(food.isNegative ? .red : .green)
+            .padding(.top, 40)
+
+            Text(food.heroText)
+                .font(Theme.serif(84, .regular))
+                .foregroundStyle(food.isNegative ? Theme.negative : Theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .padding(.top, 6)
+
+            Text(food.heroCaption)
+                .font(.system(size: 16))
+                .foregroundStyle(food.isNegative ? Theme.negative : Theme.secondary)
+                .padding(.bottom, 20)
+
             if !food.isNegative {
-                ProgressView(value: food.dayProgress)
-                    .tint(.green)
-                Text(food.daysAheadText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                ProgressLine(progress: food.dayProgress)
+                Text(food.daysText)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.top, 12)
             }
         }
-        .padding(.vertical, 6)
     }
 }

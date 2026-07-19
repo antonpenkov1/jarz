@@ -15,7 +15,7 @@ final class IncomeInteractor: IncomeBusinessLogic {
     }
 
     func prepare(request: Income.Prepare.Request) {
-        let settings = worker.state.settings
+        let settings = worker.settings()
         let symbol = settings.currencySymbol
 
         let prefills = worker.sortedCategories().map { category -> Income.Prepare.Response.Prefill in
@@ -42,23 +42,21 @@ final class IncomeInteractor: IncomeBusinessLogic {
     func save(request: Income.Save.Request) {
         var allocated = Decimal.zero
         let date = Date()
-        worker.update { state in
-            for category in state.categories {
-                guard let text = request.amounts[category.id],
-                      let amount = MoneyFormat.parse(text), amount > 0 else { continue }
-                allocated += amount
-                state.transactions.append(MoneyTransaction(
-                    categoryId: category.id,
-                    kind: .allocation,
-                    amount: amount,
-                    note: "Income",
-                    date: date
-                ))
-            }
+        for category in worker.sortedCategories() {
+            guard let text = request.amounts[category.id],
+                  let amount = MoneyFormat.parse(text), amount > 0 else { continue }
+            allocated += amount
+            worker.addTransaction(
+                categoryId: category.id,
+                kind: .allocation,
+                amount: amount,
+                note: "Income",
+                date: date
+            )
         }
         presenter.presentSaved(response: .init(
             allocatedTotal: allocated,
-            currencySymbol: worker.state.settings.currencySymbol
+            currencySymbol: worker.settings().currencySymbol
         ))
         prepare(request: .init())
     }

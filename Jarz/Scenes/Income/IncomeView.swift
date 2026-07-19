@@ -58,59 +58,80 @@ struct IncomeView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Salary received") {
-                    TextField("Total amount (optional)", text: $store.salaryText)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionLabel("Income")
+                        .padding(.top, 20)
+
+                    SectionLabel("Salary received")
+                        .padding(.top, 36)
+                    TextField("0", text: $store.salaryText)
+                        .font(Theme.serif(52, .regular))
                         .keyboardType(.decimalPad)
-                }
-                Section("Distribute across categories") {
+                        .foregroundStyle(Theme.ink)
+                        .padding(.top, 4)
+                    Hairline()
+
+                    SectionLabel("Distribute")
+                        .padding(.top, 40)
+                        .padding(.bottom, 4)
+
                     ForEach(store.viewModel.rows) { row in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 3) {
                                 Text(row.name)
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(Theme.ink)
                                 if let hint = row.autoHint {
-                                    Text(hint)
-                                        .font(.caption)
-                                        .foregroundStyle(.blue)
+                                    Text(hint.uppercased())
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .tracking(1.2)
+                                        .foregroundStyle(Theme.accent)
                                 }
                             }
                             Spacer()
                             TextField("0", text: store.binding(for: row.id))
+                                .font(Theme.serif(18))
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 140)
+                                .foregroundStyle(Theme.ink)
+                                .frame(maxWidth: 130)
                         }
+                        .padding(.vertical, 15)
+                        Hairline()
                     }
-                }
-                Section {
-                    HStack {
-                        Text("Allocated")
+
+                    HStack(alignment: .firstTextBaseline) {
+                        SectionLabel("Allocated")
                         Spacer()
-                        Text(MoneyFormat.money(store.allocatedTotal, symbol: store.viewModel.currencySymbol))
-                            .fontWeight(.semibold)
+                        AmountText(text: MoneyFormat.money(store.allocatedTotal, symbol: store.viewModel.currencySymbol))
                     }
+                    .padding(.top, 28)
+
                     if let remaining = store.remaining {
-                        HStack {
-                            Text("Left to allocate")
+                        HStack(alignment: .firstTextBaseline) {
+                            SectionLabel("Left to allocate")
                             Spacer()
-                            Text(MoneyFormat.money(remaining, symbol: store.viewModel.currencySymbol))
-                                .fontWeight(.semibold)
-                                .foregroundStyle(remaining == 0 ? Color.green : (remaining < 0 ? .red : .orange))
+                            AmountText(
+                                text: MoneyFormat.money(remaining, symbol: store.viewModel.currencySymbol),
+                                color: remaining == 0 ? Theme.accent : (remaining < 0 ? Theme.negative : Theme.ink)
+                            )
                         }
+                        .padding(.top, 14)
                     }
-                }
-                Section {
-                    Button {
+
+                    CapsuleButton(title: "Add to balances", disabled: store.allocatedTotal <= 0) {
                         store.interactor?.save(request: .init(amounts: store.amounts))
-                    } label: {
-                        Text("Add to balances")
-                            .frame(maxWidth: .infinity)
-                            .fontWeight(.semibold)
                     }
-                    .disabled(store.allocatedTotal <= 0)
+                    .padding(.top, 32)
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 40)
             }
-            .navigationTitle("Income")
+            .background(Theme.bg.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDoneButton()
             .onAppear { store.interactor?.prepare(request: .init()) }
             .alert("Done", isPresented: Binding(
                 get: { store.successMessage != nil },
@@ -121,5 +142,6 @@ struct IncomeView: View {
                 Text(store.successMessage ?? "")
             }
         }
+        .tint(Theme.ink)
     }
 }

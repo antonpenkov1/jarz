@@ -16,24 +16,23 @@ final class ReconciliationInteractor: ReconciliationBusinessLogic {
 
     func load(request: Reconciliation.Load.Request) {
         presenter.presentAccounts(response: .init(
-            accounts: worker.state.accounts,
+            accounts: worker.accounts(),
             appTotal: worker.totalBalance(),
-            currencySymbol: worker.state.settings.currencySymbol
+            currencySymbol: worker.settings().currencySymbol
         ))
     }
 
     func save(request: Reconciliation.Save.Request) {
-        worker.update { state in
-            state.accounts = request.entries
-                .filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
-                .map { entry in
-                    ReconciliationAccount(
-                        id: entry.id,
-                        name: entry.name,
-                        amount: MoneyFormat.parse(entry.amountText) ?? 0
-                    )
-                }
-        }
+        let accounts = request.entries
+            .filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
+            .map { entry in
+                ReconciliationAccount(
+                    id: entry.id,
+                    name: entry.name,
+                    amount: MoneyFormat.parse(entry.amountText) ?? 0
+                )
+            }
+        worker.replaceAccounts(accounts)
         load(request: .init())
     }
 }

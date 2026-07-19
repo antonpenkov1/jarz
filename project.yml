@@ -14,6 +14,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.antonpenkov.jarz
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+# iCloud sync is code-ready; re-enable when a paid Apple Developer account is set up:
+#        CODE_SIGN_ENTITLEMENTS: Jarz/Jarz.entitlements
+#        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

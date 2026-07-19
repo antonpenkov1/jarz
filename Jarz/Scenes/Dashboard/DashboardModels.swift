@@ -12,6 +12,7 @@ enum Dashboard {
             let food: CategoryBalance?
             let others: [CategoryBalance]
             let dailyFoodAmount: Decimal
+            let foodSpentToday: Decimal
             let total: Decimal
             let currencySymbol: String
         }
@@ -20,8 +21,10 @@ enum Dashboard {
             struct FoodCard {
                 let name: String
                 let balanceText: String
-                let currentDayText: String
-                let daysAheadText: String
+                /// Big serif numeral: what's left for the current day.
+                let heroText: String
+                let heroCaption: String
+                let daysText: String
                 let isNegative: Bool
                 let dayProgress: Double
             }
