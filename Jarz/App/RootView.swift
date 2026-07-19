@@ -20,7 +20,21 @@ struct RootView: View {
                 .tag(3)
         }
         .tint(Theme.ink)
-        .preferredColorScheme((AppearanceMode(rawValue: appearanceRaw) ?? .system).colorScheme)
+        .onAppear {
+            appearanceMode.apply()
+            #if DEBUG
+            // Screenshot hook: `-DemoAppearanceCycle 1` flips dark at 1s, back to light at 4s.
+            if UserDefaults.standard.bool(forKey: "DemoAppearanceCycle") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { appearanceRaw = "dark" }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4) { appearanceRaw = "light" }
+            }
+            #endif
+        }
+        .onChange(of: appearanceRaw) { appearanceMode.apply() }
+    }
+
+    private var appearanceMode: AppearanceMode {
+        AppearanceMode(rawValue: appearanceRaw) ?? .system
     }
 
     /// DEBUG-only screenshot/verification hook: launch with `-OpenTab 3`.
