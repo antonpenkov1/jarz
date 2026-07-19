@@ -87,74 +87,65 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Food budget") {
-                    categoryPicker("Food category", selection: $store.foodCategoryId)
-                    HStack {
-                        Text("Per day")
-                        Spacer()
-                        TextField("0", text: $store.dailyFoodText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
-                    }
+            List {
+                Section {
+                    EmptyView()
+                } header: {
+                    SectionLabel("Settings")
+                        .padding(.leading, -8)
+                }
+                .listRowBackground(Theme.bg)
+
+                section("Food budget") {
+                    categoryPicker("Food jar", selection: $store.foodCategoryId)
+                    amountRow("Per day", text: $store.dailyFoodText)
                     if let hint = store.monthlyFoodHint {
-                        Text(hint)
-                            .font(.caption)
-                            .foregroundStyle(.blue)
+                        Text(hint.uppercased())
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(1.2)
+                            .foregroundStyle(Theme.accent)
                     }
                 }
-                Section("Apartment") {
-                    categoryPicker("Apartment category", selection: $store.apartmentCategoryId)
-                    HStack {
-                        Text("Per month")
-                        Spacer()
-                        TextField("0", text: $store.apartmentText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
-                    }
+
+                section("Apartment") {
+                    categoryPicker("Apartment jar", selection: $store.apartmentCategoryId)
+                    amountRow("Per month", text: $store.apartmentText)
                 }
-                Section("Bills (subscriptions, utilities…)") {
-                    categoryPicker("Bills category", selection: $store.billsCategoryId)
-                    HStack {
-                        Text("Per month")
-                        Spacer()
-                        TextField("0", text: $store.billsText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
-                    }
+
+                section("Bills — subscriptions, utilities") {
+                    categoryPicker("Bills jar", selection: $store.billsCategoryId)
+                    amountRow("Per month", text: $store.billsText)
                 }
-                Section("Currency") {
+
+                section("Currency") {
                     TextField("Symbol (e.g. RSD, €, $)", text: $store.currencySymbol)
+                        .font(.system(size: 16))
                 }
-                Section("Categories") {
-                    ForEach(store.categories) { category in
-                        TextField("Name", text: store.nameBinding(for: category.id))
-                    }
-                    .onDelete { offsets in
-                        if let index = offsets.first {
-                            store.pendingDeleteId = store.categories[index].id
-                        }
-                    }
-                    .onMove { from, to in
-                        store.interactor?.moveCategory(request: .init(from: from, to: to))
-                    }
+
+                Section {
+                    jarsRows
+                        .listRowBackground(Theme.bg)
+                        .listRowSeparatorTint(Theme.hairline)
+                } header: {
                     HStack {
-                        TextField("New category", text: $store.newCategoryName)
-                        Button {
-                            store.addCategory()
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
+                        SectionLabel("Jars")
+                        Spacer()
+                        Button(editMode.isEditing ? "Done" : "Reorder") {
+                            withAnimation { editMode = editMode.isEditing ? .inactive : .active }
                         }
-                        .disabled(store.newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
                     }
+                    .padding(.leading, -8)
+                    .padding(.top, 8)
                 }
             }
-            .navigationTitle("Settings")
-            .toolbar { EditButton() }
-            .onAppear { store.interactor?.load(request: .init()) }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Theme.bg.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .keyboardDoneButton()
+            .environment(\.editMode, $editMode)
             .onChange(of: store.currencySymbol) { store.persistSettings() }
             .onChange(of: store.dailyFoodText) { store.persistSettings() }
             .onChange(of: store.apartmentText) { store.persistSettings() }
@@ -163,7 +154,7 @@ struct SettingsView: View {
             .onChange(of: store.apartmentCategoryId) { store.persistSettings() }
             .onChange(of: store.billsCategoryId) { store.persistSettings() }
             .alert(
-                "Delete category?",
+                "Delete jar?",
                 isPresented: Binding(
                     get: { store.pendingDeleteId != nil },
                     set: { if !$0 { store.pendingDeleteId = nil } }
@@ -177,8 +168,65 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) { store.pendingDeleteId = nil }
             } message: {
-                Text("The category and its whole history will be removed.")
+                Text("The jar and its whole history will be removed.")
             }
+        }
+        .tint(Theme.ink)
+    }
+
+    @State private var editMode: EditMode = .inactive
+
+    @ViewBuilder
+    private var jarsRows: some View {
+                    ForEach(store.categories) { category in
+                        TextField("Name", text: store.nameBinding(for: category.id))
+                            .font(.system(size: 16))
+                    }
+                    .onDelete { offsets in
+                        if let index = offsets.first {
+                            store.pendingDeleteId = store.categories[index].id
+                        }
+                    }
+                    .onMove { from, to in
+                        store.interactor?.moveCategory(request: .init(from: from, to: to))
+                    }
+                    HStack {
+                        TextField("New jar", text: $store.newCategoryName)
+                            .font(.system(size: 16))
+                        Button {
+                            store.addCategory()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .disabled(store.newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        Section {
+            content()
+                .listRowBackground(Theme.bg)
+                .listRowSeparatorTint(Theme.hairline)
+        } header: {
+            SectionLabel(title)
+                .padding(.leading, -8)
+                .padding(.top, 8)
+        }
+    }
+
+    private func amountRow(_ label: String, text: Binding<String>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            TextField("0", text: text)
+                .font(Theme.serif(17))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: 140)
         }
     }
 
@@ -189,5 +237,7 @@ struct SettingsView: View {
                 Text(category.name).tag(UUID?.some(category.id))
             }
         }
+        .font(.system(size: 16))
+        .tint(Theme.secondary)
     }
 }

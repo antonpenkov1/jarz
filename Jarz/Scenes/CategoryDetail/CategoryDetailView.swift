@@ -28,8 +28,7 @@ final class CategoryDetailViewStore: ObservableObject, CategoryDetailDisplayLogi
     }
 
     func presentEditSheet(rowId: UUID) {
-        guard let transaction = StorageWorker.shared.state.transactions
-            .first(where: { $0.id == rowId }) else { return }
+        guard let transaction = StorageWorker.shared.transaction(id: rowId) else { return }
         editingTransactionId = rowId
         formIsExpense = transaction.kind == .expense
         formAmount = MoneyFormat.amount(transaction.amount).replacingOccurrences(of: " ", with: "")
@@ -68,48 +67,67 @@ struct CategoryDetailView: View {
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionLabel(store.viewModel.title)
+                        .padding(.top, 8)
                     Text(store.viewModel.balanceText)
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(store.viewModel.isNegative ? .red : .primary)
+                        .font(Theme.serif(56, .regular))
+                        .foregroundStyle(store.viewModel.isNegative ? Theme.negative : Theme.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
+                        .padding(.top, 8)
                     if let foodLine = store.viewModel.foodLine {
                         Text(foodLine)
-                            .font(.subheadline)
-                            .foregroundStyle(store.viewModel.isNegative ? .red : .green)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(store.viewModel.isNegative ? Theme.negative : Theme.accent)
+                            .padding(.top, 6)
                     }
+                    SectionLabel("History")
+                        .padding(.top, 36)
                 }
-                .padding(.vertical, 4)
+                .listRowBackground(Theme.bg)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 8, trailing: 28))
             }
-            Section("History") {
+
+            Section {
                 if store.viewModel.rows.isEmpty {
                     Text("No operations yet")
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 16))
+                        .foregroundStyle(Theme.secondary)
+                        .listRowBackground(Theme.bg)
+                        .listRowInsets(EdgeInsets(top: 16, leading: 28, bottom: 16, trailing: 28))
                 }
                 ForEach(store.viewModel.rows) { row in
                     Button {
                         store.presentEditSheet(rowId: row.id)
                     } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 3) {
                                 if !row.note.isEmpty {
                                     Text(row.note)
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(Theme.ink)
                                 }
                                 if !row.kindLabel.isEmpty {
-                                    Text(row.kindLabel)
-                                        .font(.caption)
-                                        .foregroundStyle(.blue)
+                                    Text(row.kindLabel.uppercased())
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .tracking(1.5)
+                                        .foregroundStyle(Theme.accent)
                                 }
                                 Text(row.dateText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Theme.secondary)
                             }
                             Spacer()
-                            Text(row.amountText)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(row.isExpense ? .primary : Color.green)
+                            AmountText(text: row.amountText,
+                                       color: row.isExpense ? Theme.ink : Theme.accent)
                         }
+                        .padding(.vertical, 6)
                     }
-                    .foregroundStyle(.primary)
+                    .listRowBackground(Theme.bg)
+                    .listRowSeparatorTint(Theme.hairline)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 28, bottom: 8, trailing: 28))
                     .swipeActions {
                         Button("Delete", role: .destructive) {
                             store.interactor?.deleteTransaction(request: .init(transactionId: row.id))
@@ -118,13 +136,18 @@ struct CategoryDetailView: View {
                 }
             }
         }
-        .navigationTitle(store.viewModel.title)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Theme.bg.ignoresSafeArea())
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     store.presentAddSheet()
                 } label: {
                     Image(systemName: "plus")
+                        .fontWeight(.medium)
+                        .foregroundStyle(Theme.ink)
                 }
             }
         }
@@ -136,24 +159,42 @@ struct CategoryDetailView: View {
 
     private var transactionSheet: some View {
         NavigationStack {
-            Form {
+            VStack(spacing: 28) {
                 Picker("Type", selection: $store.formIsExpense) {
                     Text("Expense").tag(true)
                     Text("Money in").tag(false)
                 }
                 .pickerStyle(.segmented)
-                TextField("Amount", text: $store.formAmount)
-                    .keyboardType(.decimalPad)
+
+                VStack(spacing: 10) {
+                    TextField("0", text: $store.formAmount)
+                        .font(Theme.serif(52, .regular))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Theme.ink)
+                    Hairline()
+                }
+
                 TextField("Note (optional)", text: $store.formNote)
+                    .font(.system(size: 16))
+                    .multilineTextAlignment(.center)
+
+                Spacer()
             }
+            .padding(28)
+            .background(Theme.bg.ignoresSafeArea())
             .navigationTitle(store.editingTransactionId == nil ? "New operation" : "Edit operation")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { store.isSheetPresented = false }
+                        .foregroundStyle(Theme.secondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { store.submitForm() }
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Theme.ink)
                         .disabled(MoneyFormat.parse(store.formAmount) == nil)
                 }
             }

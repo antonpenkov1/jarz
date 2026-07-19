@@ -18,15 +18,16 @@ final class DashboardPresenter: DashboardPresentationLogic {
             let progress = daily > 0 && split.remainder > 0
                 ? min(1, (split.remainder as NSDecimalNumber).doubleValue / (daily as NSDecimalNumber).doubleValue)
                 : 0
+            let day = FoodDay.currentDayPhrase(spentToday: response.foodSpentToday, daily: daily)
+            let coveredUntil = Calendar.current.date(byAdding: .day, value: split.fullDays, to: day.dayDate) ?? day.dayDate
             foodCard = Dashboard.Load.ViewModel.FoodCard(
                 name: food.category.name,
                 balanceText: MoneyFormat.money(food.balance, symbol: symbol),
-                currentDayText: isNegative
-                    ? "Over budget"
-                    : "\(MoneyFormat.money(split.remainder, symbol: symbol)) left for the current day",
-                daysAheadText: isNegative
+                heroText: MoneyFormat.amount(isNegative ? food.balance : split.remainder),
+                heroCaption: isNegative ? "over budget" : "\(symbol) left for \(day.phrase)",
+                daysText: isNegative
                     ? ""
-                    : "+ \(split.fullDays) full day\(split.fullDays == 1 ? "" : "s") ahead",
+                    : "+\(split.fullDays) full day\(split.fullDays == 1 ? "" : "s") · until \(FoodDay.dateText(coveredUntil))",
                 isNegative: isNegative,
                 dayProgress: progress
             )

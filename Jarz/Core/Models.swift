@@ -51,7 +51,48 @@ struct AppState: Codable {
     var accounts: [ReconciliationAccount] = []
 }
 
+enum FoodDay {
+    private static let formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
+    static func dateText(_ date: Date) -> String {
+        formatter.string(from: date)
+    }
+
+    /// "today, 19 Jul" / "tomorrow, 20 Jul" / "22 Jul" — which day the
+    /// remainder belongs to, judged by how much was already spent today.
+    static func currentDayPhrase(spentToday: Decimal, daily: Decimal, now: Date = Date()) -> (phrase: String, dayDate: Date) {
+        let offset = FoodMath.daysEatenAhead(spentToday: spentToday, daily: daily)
+        let dayDate = Calendar.current.date(byAdding: .day, value: offset, to: now) ?? now
+        let dateText = formatter.string(from: dayDate)
+        switch offset {
+        case 0: return ("today, \(dateText)", dayDate)
+        case 1: return ("tomorrow, \(dateText)", dayDate)
+        default: return (dateText, dayDate)
+        }
+    }
+}
+
 enum FoodMath {
+    /// How many whole daily budgets today's spending has consumed.
+    /// 0 — the remainder still belongs to today; 1 — today's budget is fully
+    /// eaten and the remainder belongs to tomorrow; 2 — the day after, etc.
+    static func daysEatenAhead(spentToday: Decimal, daily: Decimal) -> Int {
+        guard daily > 0, spentToday >= daily else { return 0 }
+        let handler = NSDecimalNumberHandler(
+            roundingMode: .down, scale: 0,
+            raiseOnExactness: false, raiseOnOverflow: false,
+            raiseOnUnderflow: false, raiseOnDivideByZero: false
+        )
+        return (spentToday as NSDecimalNumber)
+            .dividing(by: daily as NSDecimalNumber)
+            .rounding(accordingToBehavior: handler)
+            .intValue
+    }
+
     /// Splits a balance into full days at the daily rate plus the remainder
     /// available on the current (partially spent) day. Calendar-independent:
     /// the remainder always belongs to the earliest unfinished day.

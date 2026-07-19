@@ -30,6 +30,10 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
         accounts.append(.init(id: UUID(), name: "", amountText: ""))
     }
 
+    func removeAccount(id: UUID) {
+        accounts.removeAll { $0.id == id }
+    }
+
     func save() {
         interactor?.save(request: .init(entries: accounts.map {
             .init(id: $0.id, name: $0.name, amountText: $0.amountText)
@@ -56,72 +60,104 @@ struct ReconciliationView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Text("Count the money on every card and in cash, enter it below, and compare with what the app has planned.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                Section("Cards & cash") {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionLabel("Revision")
+                        .padding(.top, 20)
+
+                    Text("Count the money on every card and in cash, then compare with the plan.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.secondary)
+                        .padding(.top, 14)
+
+                    SectionLabel("Cards & cash")
+                        .padding(.top, 36)
+                        .padding(.bottom, 4)
+
                     ForEach($store.accounts) { $account in
-                        HStack {
+                        HStack(spacing: 14) {
                             TextField("Name (e.g. Visa, Cash)", text: $account.name)
+                                .font(.system(size: 17))
+                                .foregroundStyle(Theme.ink)
                             TextField("0", text: $account.amountText)
+                                .font(Theme.serif(18))
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 120)
+                                .foregroundStyle(Theme.ink)
+                                .frame(maxWidth: 110)
+                            Button {
+                                store.removeAccount(id: account.id)
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Theme.secondary)
+                            }
                         }
+                        .padding(.vertical, 15)
+                        Hairline()
                     }
-                    .onDelete { store.accounts.remove(atOffsets: $0) }
+
                     Button {
                         store.addAccount()
                     } label: {
-                        Label("Add card or cash", systemImage: "plus")
+                        Text("+ Add card or cash")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Theme.accent)
                     }
-                }
-                Section("Result") {
-                    HStack {
-                        Text("Planned in app")
-                        Spacer()
-                        Text(store.appTotalText).fontWeight(.semibold)
+                    .padding(.top, 18)
+
+                    SectionLabel("Result")
+                        .padding(.top, 40)
+
+                    resultRow("Planned in app", store.appTotalText, color: Theme.ink)
+                        .padding(.top, 16)
+                    resultRow("Counted for real",
+                              MoneyFormat.money(store.countedTotal, symbol: store.currencySymbol),
+                              color: Theme.ink)
+                        .padding(.top, 12)
+                    resultRow("Difference",
+                              MoneyFormat.money(store.difference, symbol: store.currencySymbol),
+                              color: store.difference == 0 ? Theme.accent : Theme.negative)
+                        .padding(.top, 12)
+
+                    Group {
+                        if store.difference == 0 && !store.accounts.isEmpty {
+                            Text("Perfect — your plan matches reality.")
+                                .foregroundStyle(Theme.accent)
+                        } else if store.difference != 0 {
+                            Text(store.difference > 0
+                                 ? "You have more money than planned. Add the extra to a jar to zero out."
+                                 : "Some money is unaccounted for. Record the missing expenses to zero out.")
+                                .foregroundStyle(Theme.secondary)
+                        }
                     }
-                    HStack {
-                        Text("Counted for real")
-                        Spacer()
-                        Text(MoneyFormat.money(store.countedTotal, symbol: store.currencySymbol))
-                            .fontWeight(.semibold)
-                    }
-                    HStack {
-                        Text("Difference")
-                        Spacer()
-                        Text(MoneyFormat.money(store.difference, symbol: store.currencySymbol))
-                            .fontWeight(.bold)
-                            .foregroundStyle(store.difference == 0 ? Color.green : .red)
-                    }
-                    if store.difference == 0 && !store.accounts.isEmpty {
-                        Text("Perfect — your plan matches reality.")
-                            .font(.subheadline)
-                            .foregroundStyle(.green)
-                    } else if store.difference != 0 {
-                        Text(store.difference > 0
-                             ? "You have more money than planned. Add the extra to a category to zero out."
-                             : "Some money is unaccounted for. Record the missing expenses to zero out.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Section {
-                    Button {
+                    .font(.system(size: 14))
+                    .padding(.top, 16)
+
+                    CapsuleButton(title: "Save revision") {
                         store.save()
-                    } label: {
-                        Text("Save revision")
-                            .frame(maxWidth: .infinity)
-                            .fontWeight(.semibold)
                     }
+                    .padding(.top, 32)
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 40)
             }
-            .navigationTitle("Revision")
+            .background(Theme.bg.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDoneButton()
             .onAppear { store.interactor?.load(request: .init()) }
+        }
+        .tint(Theme.ink)
+    }
+
+    private func resultRow(_ label: String, _ value: String, color: Color) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.secondary)
+            Spacer()
+            AmountText(text: value, size: 18, color: color)
         }
     }
 }
