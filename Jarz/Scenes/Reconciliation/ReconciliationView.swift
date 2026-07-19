@@ -9,6 +9,7 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
     @Published var appTotal: Decimal = 0
     @Published var appTotalText = ""
     @Published var currencySymbol = ""
+    @Published var revisions: [Reconciliation.Load.ViewModel.RevisionRow] = []
     var interactor: ReconciliationBusinessLogic?
 
     func displayAccounts(viewModel: Reconciliation.Load.ViewModel) {
@@ -16,6 +17,7 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
         appTotal = viewModel.appTotal
         appTotalText = viewModel.appTotalText
         currencySymbol = viewModel.currencySymbol
+        revisions = viewModel.revisions
     }
 
     var countedTotal: Decimal {
@@ -138,6 +140,17 @@ struct ReconciliationView: View {
                         store.save()
                     }
                     .padding(.top, 32)
+
+                    if !store.revisions.isEmpty {
+                        SectionLabel("History")
+                            .padding(.top, 44)
+                            .padding(.bottom, 4)
+
+                        ForEach(store.revisions) { revision in
+                            revisionRow(revision)
+                            Hairline()
+                        }
+                    }
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 40)
@@ -146,9 +159,81 @@ struct ReconciliationView: View {
             .toolbar(.hidden, for: .navigationBar)
             .scrollDismissesKeyboard(.interactively)
             .keyboardDoneButton()
-            .onAppear { store.interactor?.load(request: .init()) }
+            .onAppear {
+                store.interactor?.load(request: .init())
+                #if DEBUG
+                // Screenshot hook: `-DemoRevision 1` saves a demo revision through the real path.
+                if UserDefaults.standard.bool(forKey: "DemoRevision") {
+                    store.interactor?.save(request: .init(entries: [
+                        .init(id: UUID(), name: "Visa", amountText: "120000"),
+                        .init(id: UUID(), name: "Cash", amountText: "21300"),
+                    ]))
+                }
+                #endif
+            }
         }
         .tint(Theme.ink)
+    }
+
+    @State private var expandedRevisions: Set<UUID> = []
+
+    @ViewBuilder
+    private func revisionRow(_ revision: Reconciliation.Load.ViewModel.RevisionRow) -> some View {
+        let isExpanded = expandedRevisions.contains(revision.id)
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    if isExpanded {
+                        expandedRevisions.remove(revision.id)
+                    } else {
+                        expandedRevisions.insert(revision.id)
+                    }
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(revision.dateText)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    AmountText(text: revision.differenceText, size: 16,
+                               color: revision.isBalanced ? Theme.accent : Theme.negative)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.vertical, 15)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    detailRow("Planned in app", revision.plannedText)
+                    detailRow("Counted for real", revision.countedText)
+                    ForEach(revision.entries) { entry in
+                        detailRow(entry.name, entry.amountText)
+                            .padding(.leading, 16)
+                    }
+                }
+                .padding(.bottom, 16)
+            }
+        }
+        .contextMenu {
+            Button("Delete revision", role: .destructive) {
+                store.interactor?.deleteRevision(request: .init(id: revision.id))
+            }
+        }
+    }
+
+    private func detailRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .font(.system(size: 14))
+                .foregroundStyle(Theme.secondary)
+            Spacer()
+            AmountText(text: value, size: 15, color: Theme.secondary)
+        }
     }
 
     private func resultRow(_ label: String, _ value: String, color: Color) -> some View {
