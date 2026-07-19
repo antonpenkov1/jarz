@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var selectedTab = RootView.initialTab
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -19,6 +20,7 @@ struct RootView: View {
                 .tag(3)
         }
         .tint(Theme.ink)
+        .preferredColorScheme((AppearanceMode(rawValue: appearanceRaw) ?? .system).colorScheme)
     }
 
     /// DEBUG-only screenshot/verification hook: launch with `-OpenTab 3`.

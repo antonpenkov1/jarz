@@ -5,8 +5,8 @@ struct JarzApp: App {
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(Theme.bg)
-        appearance.shadowColor = UIColor(Theme.hairline)
+        appearance.backgroundColor = Theme.bgUI
+        appearance.shadowColor = Theme.hairlineUI
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }

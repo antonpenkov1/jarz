@@ -80,6 +80,7 @@ enum SettingsConfigurator {
 
 struct SettingsView: View {
     @StateObject private var store: SettingsViewStore
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
 
     init(store: SettingsViewStore) {
         _store = StateObject(wrappedValue: store)
@@ -120,6 +121,16 @@ struct SettingsView: View {
                 section("Currency") {
                     TextField("Symbol (e.g. RSD, €, $)", text: $store.currencySymbol)
                         .font(.system(size: 16))
+                }
+
+                section("Appearance") {
+                    Picker("Appearance", selection: $appearanceRaw) {
+                        ForEach(AppearanceMode.allCases, id: \.rawValue) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                 }
 
                 Section {
