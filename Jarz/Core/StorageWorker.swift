@@ -72,6 +72,24 @@ final class JarAccount {
     }
 }
 
+@Model
+final class JarRevision {
+    var id: UUID = UUID()
+    var date: Date = Date()
+    var planned: Decimal = 0
+    var counted: Decimal = 0
+    /// JSON-encoded [RevisionEntry] — per-account snapshot at save time.
+    var entriesData: Data = Data()
+
+    init(id: UUID = UUID(), date: Date, planned: Decimal, counted: Decimal, entriesData: Data) {
+        self.id = id
+        self.date = date
+        self.planned = planned
+        self.counted = counted
+        self.entriesData = entriesData
+    }
+}
+
 // MARK: - Storage worker
 
 /// Single source of truth. SwiftData store synced to the user's private
@@ -89,7 +107,8 @@ final class StorageWorker {
     private let context: ModelContext
 
     private init() {
-        let schema = Schema([JarCategory.self, JarTransaction.self, JarSettings.self, JarAccount.self])
+        let schema = Schema([JarCategory.self, JarTransaction.self, JarSettings.self,
+                             JarAccount.self, JarRevision.self])
         do {
             let config = ModelConfiguration(
                 schema: schema,
@@ -259,6 +278,29 @@ final class StorageWorker {
         for (index, dto) in dtos.enumerated() {
             context.insert(JarAccount(id: dto.id, name: dto.name, amount: dto.amount, order: index))
         }
+        save()
+    }
+
+    func revisions() -> [RevisionRecord] {
+        let fetch = FetchDescriptor<JarRevision>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        return ((try? context.fetch(fetch)) ?? []).map {
+            RevisionRecord(
+                id: $0.id, date: $0.date, planned: $0.planned, counted: $0.counted,
+                entries: (try? JSONDecoder().decode([RevisionEntry].self, from: $0.entriesData)) ?? []
+            )
+        }
+    }
+
+    func addRevision(planned: Decimal, counted: Decimal, entries: [RevisionEntry]) {
+        let data = (try? JSONEncoder().encode(entries)) ?? Data()
+        context.insert(JarRevision(date: Date(), planned: planned, counted: counted, entriesData: data))
+        save()
+    }
+
+    func deleteRevision(id: UUID) {
+        let fetch = FetchDescriptor<JarRevision>(predicate: #Predicate { $0.id == id })
+        guard let model = (try? context.fetch(fetch))?.first else { return }
+        context.delete(model)
         save()
     }
 

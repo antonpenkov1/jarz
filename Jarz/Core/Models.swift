@@ -44,6 +44,22 @@ struct ReconciliationAccount: Codable, Identifiable, Hashable {
     var amount: Decimal = 0
 }
 
+/// One card/cash line inside a saved revision snapshot.
+struct RevisionEntry: Codable, Hashable {
+    var name: String
+    var amount: Decimal
+}
+
+/// A saved revision: plan vs reality at a moment in time.
+struct RevisionRecord: Identifiable, Hashable {
+    var id: UUID = UUID()
+    var date: Date
+    var planned: Decimal
+    var counted: Decimal
+    var entries: [RevisionEntry]
+    var difference: Decimal { counted - planned }
+}
+
 struct AppState: Codable {
     var categories: [BudgetCategory] = []
     var transactions: [MoneyTransaction] = []
