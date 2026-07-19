@@ -62,20 +62,56 @@ struct CapsuleButton: View {
     }
 }
 
-extension View {
-    /// "Done" above the keyboard; attach once per screen that has text fields.
-    func keyboardDoneButton() -> some View {
-        toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+/// Tracks software-keyboard visibility. Used instead of the native keyboard
+/// toolbar (`ToolbarItemGroup(placement: .keyboard)`), which unreliably
+/// disappears inside a TabView.
+private final class KeyboardObserver: ObservableObject {
+    @Published var isVisible = false
+    private var tokens: [NSObjectProtocol] = []
+
+    init() {
+        let center = NotificationCenter.default
+        tokens.append(center.addObserver(
+            forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.isVisible = true })
+        tokens.append(center.addObserver(
+            forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.isVisible = false })
+    }
+
+    deinit { tokens.forEach(NotificationCenter.default.removeObserver) }
+}
+
+private struct KeyboardDoneBar: ViewModifier {
+    @StateObject private var keyboard = KeyboardObserver()
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            if keyboard.isVisible {
+                HStack {
+                    Spacer()
+                    Button("Done") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
                 }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.ink)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(Theme.bg)
+                .overlay(alignment: .top) { Hairline() }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(.easeOut(duration: 0.2), value: keyboard.isVisible)
+    }
+}
+
+extension View {
+    /// "Done" bar pinned above the keyboard; attach once per screen that has text fields.
+    func keyboardDoneButton() -> some View {
+        modifier(KeyboardDoneBar())
     }
 }
 
