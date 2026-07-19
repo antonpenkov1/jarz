@@ -36,12 +36,21 @@ enum AppearanceMode: String, CaseIterable {
 
     static let storageKey = "appearance"
 
-    var colorScheme: ColorScheme? {
+    var uiStyle: UIUserInterfaceStyle {
         switch self {
-        case .system: return nil
+        case .system: return .unspecified
         case .light: return .light
         case .dark: return .dark
         }
+    }
+
+    /// Overrides the trait on the app's windows. More reliable than
+    /// `preferredColorScheme`, which never resets back to system (nil).
+    func apply() {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .forEach { $0.overrideUserInterfaceStyle = uiStyle }
     }
 
     var title: String {
