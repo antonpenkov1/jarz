@@ -111,9 +111,11 @@ struct DashboardView: View {
                 .minimumScaleFactor(0.4)
                 .padding(.top, 6)
 
-            Text(food.heroCaption)
+            (Text(food.heroCaption)
+                .foregroundColor(food.isNegative ? Theme.negative : Theme.secondary)
+             + Text(food.heroCaptionDay)
+                .foregroundColor(food.isDayAhead ? Theme.negative : Theme.secondary))
                 .font(.system(size: 16))
-                .foregroundStyle(food.isNegative ? Theme.negative : Theme.secondary)
                 .padding(.bottom, 20)
 
             if !food.isNegative {

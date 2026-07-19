@@ -24,6 +24,10 @@ enum Dashboard {
                 /// Big serif numeral: what's left for the current day.
                 let heroText: String
                 let heroCaption: String
+                /// Day phrase at the end of the caption ("today, 19 Jul" / "tomorrow, 20 Jul" / "22 Jul").
+                let heroCaptionDay: String
+                /// Today's budget is fully eaten — the remainder belongs to a future day.
+                let isDayAhead: Bool
                 let daysText: String
                 let isNegative: Bool
                 let dayProgress: Double
