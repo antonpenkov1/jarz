@@ -1,0 +1,33 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.32" r="0.95">
+      <stop offset="0" stop-color="#1C3B63"/>
+      <stop offset="1" stop-color="#0B1A30"/>
+    </radialGradient>
+    <clipPath id="jar"><rect x="302" y="352" width="420" height="452" rx="64"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <ellipse cx="512" cy="824" rx="330" ry="42" fill="#000000" opacity="0.28"/>
+
+  <!-- glass body -->
+  <g clip-path="url(#jar)">
+    <rect x="302" y="352" width="420" height="452" fill="#FFFFFF" opacity="0.10"/>
+    <!-- coin stack -->
+    <rect x="322" y="720" width="380" height="84" rx="14" fill="#E2AF2E"/>
+    <rect x="342" y="668" width="340" height="60" rx="14" fill="#F7C948"/>
+    <rect x="362" y="618" width="300" height="58" rx="14" fill="#E2AF2E"/>
+    <rect x="382" y="570" width="260" height="56" rx="14" fill="#F7C948"/>
+    <!-- glass highlight -->
+    <rect x="336" y="382" width="42" height="330" rx="21" fill="#FFFFFF" opacity="0.22"/>
+  </g>
+  <rect x="302" y="352" width="420" height="452" rx="64" fill="none" stroke="#EAF2FF" stroke-width="18" opacity="0.95"/>
+  <!-- lid -->
+  <rect x="352" y="284" width="320" height="58" rx="26" fill="#EAF2FF"/>
+
+  <!-- dropping coin with motion arcs -->
+  <circle cx="512" cy="168" r="72" fill="#F7C948" stroke="#D9A521" stroke-width="12"/>
+  <rect x="478" y="158" width="68" height="20" rx="10" fill="#D9A521"/>
+  <path d="M 388 120 A 150 150 0 0 1 420 78" stroke="#EAF2FF" stroke-width="12" fill="none" stroke-linecap="round" opacity="0.5"/>
+  <path d="M 636 120 A 150 150 0 0 0 604 78" stroke="#EAF2FF" stroke-width="12" fill="none" stroke-linecap="round" opacity="0.5"/>
+</svg>

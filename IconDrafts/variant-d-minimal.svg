@@ -1,0 +1,20 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="jar"><rect x="322" y="340" width="380" height="452" rx="64"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="#F4F6F3"/>
+
+  <!-- liquid fill with wave -->
+  <g clip-path="url(#jar)">
+    <path d="M 322 560 Q 417 520 512 560 T 702 560 L 702 792 L 322 792 Z" fill="#2FBF71"/>
+    <path d="M 322 560 Q 417 520 512 560 T 702 560" fill="none" stroke="#27A862" stroke-width="14"/>
+  </g>
+
+  <!-- jar outline -->
+  <rect x="322" y="340" width="380" height="452" rx="64" fill="none" stroke="#0B3B2E" stroke-width="30"/>
+  <rect x="372" y="262" width="280" height="56" rx="26" fill="#0B3B2E"/>
+
+  <!-- coin above the mouth -->
+  <circle cx="512" cy="170" r="54" fill="#F7C948" stroke="#0B3B2E" stroke-width="16"/>
+  <rect x="488" y="162" width="48" height="16" rx="8" fill="#0B3B2E"/>
+</svg>
