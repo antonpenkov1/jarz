@@ -24,7 +24,10 @@ final class DashboardPresenter: DashboardPresentationLogic {
                 name: food.category.name,
                 balanceText: MoneyFormat.money(food.balance, symbol: symbol),
                 heroText: MoneyFormat.amount(isNegative ? food.balance : split.remainder),
-                heroCaption: isNegative ? "over budget" : "\(symbol) left for \(day.phrase)",
+                heroCaption: isNegative ? "over budget" : "\(symbol) left for ",
+                heroCaptionDay: isNegative ? "" : day.phrase,
+                isDayAhead: !isNegative
+                    && FoodMath.daysEatenAhead(spentToday: response.foodSpentToday, daily: daily) > 0,
                 daysText: isNegative
                     ? ""
                     : "+\(split.fullDays) full day\(split.fullDays == 1 ? "" : "s") · until \(FoodDay.dateText(coveredUntil))",
