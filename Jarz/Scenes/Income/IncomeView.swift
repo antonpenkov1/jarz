@@ -51,6 +51,7 @@ enum IncomeConfigurator {
 
 struct IncomeView: View {
     @StateObject private var store: IncomeViewStore
+    @FocusState private var salaryFocused: Bool
 
     init(store: IncomeViewStore) {
         _store = StateObject(wrappedValue: store)
@@ -68,6 +69,7 @@ struct IncomeView: View {
                     TextField("0", text: $store.salaryText)
                         .font(Theme.serif(52, .regular))
                         .keyboardType(.decimalPad)
+                        .focused($salaryFocused)
                         .foregroundStyle(Theme.ink)
                         .padding(.top, 4)
                     Hairline()
@@ -132,7 +134,15 @@ struct IncomeView: View {
             .toolbar(.hidden, for: .navigationBar)
             .scrollDismissesKeyboard(.interactively)
             .keyboardDoneButton()
-            .onAppear { store.interactor?.prepare(request: .init()) }
+            .onAppear {
+                store.interactor?.prepare(request: .init())
+                #if DEBUG
+                // Screenshot hook: `-FocusSalary 1` opens the keyboard right away.
+                if UserDefaults.standard.bool(forKey: "FocusSalary") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { salaryFocused = true }
+                }
+                #endif
+            }
             .alert("Done", isPresented: Binding(
                 get: { store.successMessage != nil },
                 set: { if !$0 { store.successMessage = nil } }
