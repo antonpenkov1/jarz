@@ -2,16 +2,54 @@ import SwiftUI
 
 /// Boutique-minimal design system: warm paper background, ink text,
 /// serif numerals, hairline separators, a single green accent.
+/// Every color has a light (paper) and dark (night) variant; UIColor
+/// dynamic providers keep UIKit appearance APIs (tab bar) dynamic too.
 enum Theme {
-    static let bg = Color(red: 0.970, green: 0.965, blue: 0.948)
-    static let ink = Color(red: 0.090, green: 0.088, blue: 0.080)
-    static let secondary = Color(red: 0.52, green: 0.51, blue: 0.47)
-    static let hairline = Color(red: 0.862, green: 0.850, blue: 0.812)
-    static let accent = Color(red: 0.10, green: 0.42, blue: 0.30)
-    static let negative = Color(red: 0.72, green: 0.22, blue: 0.20)
+    static let bgUI = dynamicUI(light: (0.970, 0.965, 0.948), dark: (0.082, 0.080, 0.074))
+    static let inkUI = dynamicUI(light: (0.090, 0.088, 0.080), dark: (0.925, 0.915, 0.885))
+    static let hairlineUI = dynamicUI(light: (0.862, 0.850, 0.812), dark: (0.205, 0.200, 0.185))
+
+    static let bg = Color(bgUI)
+    static let ink = Color(inkUI)
+    static let hairline = Color(hairlineUI)
+    static let secondary = Color(dynamicUI(light: (0.52, 0.51, 0.47), dark: (0.60, 0.59, 0.55)))
+    static let accent = Color(dynamicUI(light: (0.10, 0.42, 0.30), dark: (0.38, 0.66, 0.51)))
+    static let negative = Color(dynamicUI(light: (0.72, 0.22, 0.20), dark: (0.87, 0.45, 0.42)))
 
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .medium) -> Font {
         .system(size: size, weight: weight, design: .serif)
+    }
+
+    private static func dynamicUI(
+        light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)
+    ) -> UIColor {
+        UIColor { trait in
+            let rgb = trait.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
+        }
+    }
+}
+
+/// App-wide appearance preference, applied in RootView and picked in Settings.
+enum AppearanceMode: String, CaseIterable {
+    case system, light, dark
+
+    static let storageKey = "appearance"
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .system: return "System"
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
     }
 }
 
