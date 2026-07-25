@@ -124,6 +124,7 @@ struct CategoryDetailView: View {
                                        color: row.isExpense ? Theme.ink : Theme.accent)
                         }
                         .padding(.vertical, 6)
+                        .contentShape(Rectangle())
                     }
                     .listRowBackground(Theme.bg)
                     .listRowSeparatorTint(Theme.hairline)

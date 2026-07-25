@@ -59,6 +59,7 @@ struct DashboardView: View {
                                            color: row.isNegative ? Theme.negative : Theme.ink)
                             }
                             .padding(.vertical, 17)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         Hairline()
@@ -126,5 +127,6 @@ struct DashboardView: View {
                     .padding(.top, 12)
             }
         }
+        .contentShape(Rectangle())
     }
 }
