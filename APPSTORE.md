@@ -46,14 +46,16 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 
 ## Submission checklist
 
-1. **Apple Developer Program** — активная подписка ($99/год) на developer.apple.com.
-2. **Xcode → Settings → Accounts** — войти своим Apple ID, выбрать команду.
-3. В проекте: Signing & Capabilities → Team = твоя команда, Automatically manage signing. (Bundle id `com.antonpenkov.jarz` зарегистрируется сам.)
+1. ✅ **Apple Developer Program** — оплачен (2026-07-25).
+2. **Xcode → Settings → Accounts** — войти своим Apple ID; убедиться, что видна платная команда (без пометки «Personal Team»). Team ID можно посмотреть на developer.apple.com/account → Membership details.
+3. В проекте: Signing & Capabilities → Team = платная команда, Automatically manage signing. (Bundle id `com.antonpenkov.jarz` зарегистрируется сам.) Постоянно: прописать `DEVELOPMENT_TEAM: <TeamID>` в project.yml, чтобы переживало `xcodegen generate`.
 4. **App Store Connect** (appstoreconnect.apple.com) → My Apps → «+» → New App: платформа iOS, имя Jarz — Salary Planner, bundle id из списка, SKU например `jarz-001`.
-5. Заполнить метаданные из этого файла + Privacy (Data Not Collected) + возрастной рейтинг.
-6. **Скриншоты**: обязателен набор для дисплея 6.9"/6.7" (напр. iPhone 15 Pro Max, 1290×2796). Снять с симулятора: Home с заполненной картой еды, Income, Revision, Settings. 4–5 штук достаточно.
+5. Заполнить метаданные из этого файла + Privacy (Data Not Collected) + возрастной рейтинг (4+).
+6. ✅ **Скриншоты** — сняты, лежат в `AppStore/screenshots/` (iPhone 15 Pro Max, 1290×2796): home, income, revision (с историей), settings.
 7. В Xcode: выбрать destination **Any iOS Device (arm64)** → Product → **Archive** → Organizer → **Distribute App** → App Store Connect → Upload.
 8. В App Store Connect: выбрать загруженный билд, отправить на ревью. Первое ревью обычно 1–3 дня.
+
+Примечание: iCloud-синхронизацию решили включить в 1.1 (код готов: флаг `iCloudSyncEnabled` + entitlements в project.yml). Для 1.1 не забыть обновить описание («no cloud» → private iCloud sync).
 
 ## Assets
 
