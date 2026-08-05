@@ -42,10 +42,13 @@ final class IncomeInteractor: IncomeBusinessLogic {
     func save(request: Income.Save.Request) {
         var allocated = Decimal.zero
         let date = Date()
+        var foodAllocated = false
+        var settings = worker.settings()
         for category in worker.sortedCategories() {
             guard let text = request.amounts[category.id],
                   let amount = MoneyFormat.parse(text), amount > 0 else { continue }
             allocated += amount
+            if category.id == settings.foodCategoryId { foodAllocated = true }
             worker.addTransaction(
                 categoryId: category.id,
                 kind: .allocation,
@@ -53,6 +56,16 @@ final class IncomeInteractor: IncomeBusinessLogic {
                 note: "Income",
                 date: date
             )
+        }
+        // Income re-anchors the food plan: the new balance is laid out over
+        // concrete calendar days and the end date stays fixed until next income.
+        if foodAllocated, let foodId = settings.foodCategoryId, settings.dailyFoodAmount > 0 {
+            settings.foodPlanEnd = FoodMath.planEnd(
+                balance: worker.balance(of: foodId),
+                daily: settings.dailyFoodAmount,
+                now: date
+            )
+            worker.saveSettings(settings)
         }
         presenter.presentSaved(response: .init(
             allocatedTotal: allocated,

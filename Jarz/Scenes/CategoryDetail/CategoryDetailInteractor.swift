@@ -25,7 +25,7 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
             balance: worker.balance(of: categoryId),
             isFoodCategory: settings.foodCategoryId == categoryId && settings.dailyFoodAmount > 0,
             dailyFoodAmount: settings.dailyFoodAmount,
-            foodSpentToday: worker.spentToday(categoryId: categoryId),
+            foodPlanEnd: settings.foodPlanEnd,
             transactions: worker.transactions(categoryId: categoryId),
             currencySymbol: settings.currencySymbol
         )

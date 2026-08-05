@@ -32,16 +32,11 @@ final class DashboardInteractor: DashboardBusinessLogic {
             }
         }
 
-        var foodSpentToday = Decimal.zero
-        if let foodId = settings.foodCategoryId {
-            foodSpentToday = worker.spentToday(categoryId: foodId)
-        }
-
         let response = Dashboard.Load.Response(
             food: food,
             others: others,
             dailyFoodAmount: settings.dailyFoodAmount,
-            foodSpentToday: foodSpentToday,
+            foodPlanEnd: settings.foodPlanEnd,
             total: worker.totalBalance(),
             currencySymbol: settings.currencySymbol
         )

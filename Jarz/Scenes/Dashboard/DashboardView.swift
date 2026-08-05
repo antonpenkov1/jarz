@@ -80,7 +80,16 @@ struct DashboardView: View {
             .navigationDestination(for: UUID.self) { categoryId in
                 CategoryDetailConfigurator.makeView(categoryId: categoryId)
             }
-            .onAppear { store.interactor?.load(request: .init()) }
+            .onAppear {
+                #if DEBUG
+                // Screenshot hook: `-DemoFood carry|over|topup` builds a food
+                // scenario through the real storage path.
+                if let scenario = UserDefaults.standard.string(forKey: "DemoFood") {
+                    seedFoodScenario(scenario)
+                }
+                #endif
+                store.interactor?.load(request: .init())
+            }
             .onReceive(NotificationCenter.default.publisher(for: StorageWorker.stateDidChange)) { _ in
                 store.interactor?.load(request: .init())
             }
@@ -93,6 +102,38 @@ struct DashboardView: View {
     private var foodCategoryId: UUID {
         StorageWorker.shared.settings().foodCategoryId ?? UUID()
     }
+
+    #if DEBUG
+    private func seedFoodScenario(_ scenario: String) {
+        let worker = StorageWorker.shared
+        var settings = worker.settings()
+        guard let foodId = settings.foodCategoryId else { return }
+        for t in worker.transactions(categoryId: foodId) {
+            worker.deleteTransaction(id: t.id)
+        }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        settings.dailyFoodAmount = 1000
+        switch scenario {
+        case "carry": // income yesterday, underspent yesterday → today 1000 + 350
+            worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 30000, note: "Income", date: yesterday)
+            worker.addTransaction(categoryId: foodId, kind: .expense, amount: 650, note: "Groceries", date: yesterday)
+            settings.foodPlanEnd = calendar.date(byAdding: .day, value: 29, to: yesterday)
+        case "over": // income today, blew 3500 today → money resumes in 3 days
+            worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 30000, note: "Income", date: today)
+            worker.addTransaction(categoryId: foodId, kind: .expense, amount: 3500, note: "Feast", date: today)
+            settings.foodPlanEnd = calendar.date(byAdding: .day, value: 29, to: today)
+        case "topup": // money in lands on today, plan end untouched
+            worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 30000, note: "Income", date: today)
+            worker.addTransaction(categoryId: foodId, kind: .topUp, amount: 2000, note: "Cashback", date: today)
+            settings.foodPlanEnd = calendar.date(byAdding: .day, value: 29, to: today)
+        default:
+            break
+        }
+        worker.saveSettings(settings)
+    }
+    #endif
 
     private func heroSection(_ food: Dashboard.Load.ViewModel.FoodCard) -> some View {
         VStack(alignment: .leading, spacing: 0) {

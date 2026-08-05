@@ -12,25 +12,25 @@ final class DashboardPresenter: DashboardPresentationLogic {
 
         var foodCard: Dashboard.Load.ViewModel.FoodCard?
         if let food = response.food,
-           let split = FoodMath.breakdown(balance: food.balance, daily: response.dailyFoodAmount) {
+           let plan = FoodMath.plan(balance: food.balance, daily: response.dailyFoodAmount,
+                                    planEnd: response.foodPlanEnd) {
             let isNegative = food.balance < 0
             let daily = response.dailyFoodAmount
-            let progress = daily > 0 && split.remainder > 0
-                ? min(1, (split.remainder as NSDecimalNumber).doubleValue / (daily as NSDecimalNumber).doubleValue)
+            let progress = plan.available > 0
+                ? min(1, (plan.available as NSDecimalNumber).doubleValue / (daily as NSDecimalNumber).doubleValue)
                 : 0
-            let day = FoodDay.currentDayPhrase(spentToday: response.foodSpentToday, daily: daily)
-            let coveredUntil = Calendar.current.date(byAdding: .day, value: split.fullDays, to: day.dayDate) ?? day.dayDate
             foodCard = Dashboard.Load.ViewModel.FoodCard(
                 name: food.category.name,
                 balanceText: MoneyFormat.money(food.balance, symbol: symbol),
-                heroText: MoneyFormat.amount(isNegative ? food.balance : split.remainder),
+                heroText: MoneyFormat.amount(isNegative ? food.balance : plan.available),
                 heroCaption: isNegative ? "over budget" : "\(symbol) left for ",
-                heroCaptionDay: isNegative ? "" : day.phrase,
-                isDayAhead: !isNegative
-                    && FoodMath.daysEatenAhead(spentToday: response.foodSpentToday, daily: daily) > 0,
+                heroCaptionDay: isNegative ? "" : FoodDay.phrase(for: plan.dayDate),
+                isDayAhead: !isNegative && plan.isAhead,
                 daysText: isNegative
                     ? ""
-                    : "+\(split.fullDays) full day\(split.fullDays == 1 ? "" : "s") · until \(FoodDay.dateText(coveredUntil))",
+                    : (plan.daysLeft > 0
+                        ? "+\(plan.daysLeft) day\(plan.daysLeft == 1 ? "" : "s") · until \(FoodDay.dateText(plan.planEnd))"
+                        : "last plan day · until \(FoodDay.dateText(plan.planEnd))"),
                 isNegative: isNegative,
                 dayProgress: progress
             )

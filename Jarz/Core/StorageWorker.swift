@@ -51,6 +51,7 @@ final class JarSettings {
     var apartmentAmount: Decimal = 0
     var billsCategoryId: UUID?
     var billsAmount: Decimal = 0
+    var foodPlanEnd: Date?
     /// Lets us keep the oldest record if CloudKit ever syncs in a duplicate.
     var createdAt: Date = Date()
 
@@ -155,7 +156,8 @@ final class StorageWorker {
             apartmentCategoryId: model.apartmentCategoryId,
             apartmentAmount: model.apartmentAmount,
             billsCategoryId: model.billsCategoryId,
-            billsAmount: model.billsAmount
+            billsAmount: model.billsAmount,
+            foodPlanEnd: model.foodPlanEnd
         )
     }
 
@@ -232,6 +234,7 @@ final class StorageWorker {
         model.apartmentAmount = dto.apartmentAmount
         model.billsCategoryId = dto.billsCategoryId
         model.billsAmount = dto.billsAmount
+        model.foodPlanEnd = dto.foodPlanEnd
         save()
     }
 

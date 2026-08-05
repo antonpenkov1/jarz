@@ -9,7 +9,7 @@ enum CategoryDetail {
             let balance: Decimal
             let isFoodCategory: Bool
             let dailyFoodAmount: Decimal
-            let foodSpentToday: Decimal
+            let foodPlanEnd: Date?
             let transactions: [MoneyTransaction]
             let currencySymbol: String
         }

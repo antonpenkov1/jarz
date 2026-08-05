@@ -19,14 +19,15 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
 
         var foodLine: String?
         if response.isFoodCategory,
-           let split = FoodMath.breakdown(balance: response.balance, daily: response.dailyFoodAmount) {
+           let plan = FoodMath.plan(balance: response.balance, daily: response.dailyFoodAmount,
+                                    planEnd: response.foodPlanEnd) {
             if response.balance < 0 {
                 foodLine = "Over budget"
             } else {
-                let day = FoodDay.currentDayPhrase(spentToday: response.foodSpentToday,
-                                                   daily: response.dailyFoodAmount)
-                let coveredUntil = Calendar.current.date(byAdding: .day, value: split.fullDays, to: day.dayDate) ?? day.dayDate
-                foodLine = "\(MoneyFormat.money(split.remainder, symbol: symbol)) for \(day.phrase) · +\(split.fullDays) day\(split.fullDays == 1 ? "" : "s") until \(FoodDay.dateText(coveredUntil))"
+                foodLine = "\(MoneyFormat.money(plan.available, symbol: symbol)) for \(FoodDay.phrase(for: plan.dayDate))"
+                    + (plan.daysLeft > 0
+                        ? " · +\(plan.daysLeft) day\(plan.daysLeft == 1 ? "" : "s") until \(FoodDay.dateText(plan.planEnd))"
+                        : " · until \(FoodDay.dateText(plan.planEnd))")
             }
         }
 
