@@ -26,7 +26,7 @@ enum Reconciliation {
                 let id: UUID
                 let dateText: String
                 let differenceText: String
-                let isBalanced: Bool
+                let isNegative: Bool
                 let plannedText: String
                 let countedText: String
                 let entries: [EntryRow]

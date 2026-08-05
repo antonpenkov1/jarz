@@ -118,8 +118,9 @@ struct ReconciliationView: View {
                               color: Theme.ink)
                         .padding(.top, 12)
                     resultRow("Difference",
-                              MoneyFormat.money(store.difference, symbol: store.currencySymbol),
-                              color: store.difference == 0 ? Theme.accent : Theme.negative)
+                              (store.difference > 0 ? "+" : "")
+                                + MoneyFormat.money(store.difference, symbol: store.currencySymbol),
+                              color: store.difference < 0 ? Theme.negative : Theme.accent)
                         .padding(.top, 12)
 
                     Group {
@@ -196,7 +197,7 @@ struct ReconciliationView: View {
                         .foregroundStyle(Theme.ink)
                     Spacer()
                     AmountText(text: revision.differenceText, size: 16,
-                               color: revision.isBalanced ? Theme.accent : Theme.negative)
+                               color: revision.isNegative ? Theme.negative : Theme.accent)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Theme.secondary)
