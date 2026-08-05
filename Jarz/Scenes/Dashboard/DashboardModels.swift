@@ -12,7 +12,7 @@ enum Dashboard {
             let food: CategoryBalance?
             let others: [CategoryBalance]
             let dailyFoodAmount: Decimal
-            let foodSpentToday: Decimal
+            let foodPlanEnd: Date?
             let total: Decimal
             let currencySymbol: String
         }
