@@ -28,7 +28,7 @@ final class ReconciliationPresenter: ReconciliationPresentationLogic {
                 dateText: Self.dateFormatter.string(from: record.date),
                 differenceText: (record.difference > 0 ? "+" : "")
                     + MoneyFormat.money(record.difference, symbol: symbol),
-                isBalanced: record.difference == 0,
+                isNegative: record.difference < 0,
                 plannedText: MoneyFormat.money(record.planned, symbol: symbol),
                 countedText: MoneyFormat.money(record.counted, symbol: symbol),
                 entries: record.entries.enumerated().map { index, entry in
