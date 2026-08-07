@@ -25,6 +25,7 @@ enum DashboardConfigurator {
 
 struct DashboardView: View {
     @StateObject private var store: DashboardViewStore
+    @State private var quickExpenseTarget: QuickExpenseTarget?
 
     init(store: DashboardViewStore) {
         _store = StateObject(wrappedValue: store)
@@ -42,6 +43,9 @@ struct DashboardView: View {
                             heroSection(food)
                         }
                         .buttonStyle(.plain)
+                        .simultaneousGesture(LongPressGesture(minimumDuration: 0.35).onEnded { _ in
+                            quickExpenseTarget = QuickExpenseTarget(id: foodCategoryId, name: food.name)
+                        })
                     }
 
                     SectionLabel("Jars")
@@ -62,6 +66,9 @@ struct DashboardView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .simultaneousGesture(LongPressGesture(minimumDuration: 0.35).onEnded { _ in
+                            quickExpenseTarget = QuickExpenseTarget(id: row.id, name: row.name)
+                        })
                         Hairline()
                     }
 
@@ -80,12 +87,31 @@ struct DashboardView: View {
             .navigationDestination(for: UUID.self) { categoryId in
                 CategoryDetailConfigurator.makeView(categoryId: categoryId)
             }
+            .sheet(item: $quickExpenseTarget) { target in
+                QuickExpenseSheet(
+                    target: target,
+                    onSave: { amount, note in
+                        store.interactor?.addExpense(request: .init(
+                            categoryId: target.id, amount: amount, note: note))
+                        quickExpenseTarget = nil
+                    },
+                    onCancel: { quickExpenseTarget = nil }
+                )
+            }
             .onAppear {
                 #if DEBUG
                 // Screenshot hook: `-DemoFood carry|over|topup` builds a food
                 // scenario through the real storage path.
                 if let scenario = UserDefaults.standard.string(forKey: "DemoFood") {
                     seedFoodScenario(scenario)
+                }
+                // Screenshot hook: `-QuickExpense 1` opens the quick sheet for food.
+                if UserDefaults.standard.bool(forKey: "QuickExpense") {
+                    let id = foodCategoryId
+                    let name = StorageWorker.shared.category(id: id)?.name ?? "Food"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        quickExpenseTarget = QuickExpenseTarget(id: id, name: name)
+                    }
                 }
                 #endif
                 store.interactor?.load(request: .init())
