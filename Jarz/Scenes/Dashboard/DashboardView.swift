@@ -154,6 +154,21 @@ struct DashboardView: View {
             worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 30000, note: "Income", date: today)
             worker.addTransaction(categoryId: foodId, kind: .topUp, amount: 2000, note: "Cashback", date: today)
             settings.foodPlanEnd = calendar.date(byAdding: .day, value: 29, to: today)
+        case "showcase": // marketing screenshots: every jar filled, healthy food day
+            worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 31000, note: "Income", date: yesterday)
+            worker.addTransaction(categoryId: foodId, kind: .expense, amount: 650, note: "Groceries", date: yesterday)
+            settings.foodPlanEnd = calendar.date(byAdding: .day, value: 30, to: yesterday)
+            let amounts: [String: Decimal] = ["Apartment": 40000, "Bills": 16000, "Gifts": 3000,
+                                              "Trips": 25000, "Sport": 3500, "Savings": 12000,
+                                              "Clothes": 8000, "Skincare": 4500, "Phone": 2000]
+            for category in worker.sortedCategories() where category.id != foodId {
+                guard let amount = amounts[category.name] else { continue }
+                for t in worker.transactions(categoryId: category.id) {
+                    worker.deleteTransaction(id: t.id)
+                }
+                worker.addTransaction(categoryId: category.id, kind: .allocation,
+                                      amount: amount, note: "Income", date: yesterday)
+            }
         default:
             break
         }
