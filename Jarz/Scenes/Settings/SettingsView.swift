@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 protocol SettingsDisplayLogic: AnyObject {
     func displaySettings(viewModel: Settings.Load.ViewModel)
@@ -136,6 +137,54 @@ struct SettingsView: View {
                     appIconRow
                 }
 
+                section("Sync & backup") {
+                    HStack {
+                        Text("iCloud sync")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                        (StorageWorker.shared.iCloudSyncActive() ? Text("On") : Text("Off"))
+                            .font(.system(size: 16))
+                            .foregroundStyle(StorageWorker.shared.iCloudSyncActive()
+                                             ? Theme.accent : Theme.secondary)
+                    }
+                    Text("Managed by iOS: Settings → your name → iCloud → Saved to iCloud → Jarz.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.secondary)
+
+                    Button {
+                        exportData()
+                    } label: {
+                        HStack {
+                            Text("Export data")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Theme.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showImportPicker = true
+                    } label: {
+                        HStack {
+                            Text("Import data")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Theme.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 section("About") {
                     Button {
                         showOnboarding = true
@@ -153,21 +202,6 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Button {
-                        exportData()
-                    } label: {
-                        HStack {
-                            Text("Export data")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Theme.ink)
-                            Spacer()
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Theme.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 Section {
@@ -232,9 +266,46 @@ struct SettingsView: View {
             .undoToast(isPresented: $showUndoToast) {
                 store.interactor?.undoDeleteCategory()
             }
+            .fileImporter(isPresented: $showImportPicker, allowedContentTypes: [.json]) { result in
+                guard case .success(let url) = result else { return }
+                let secured = url.startAccessingSecurityScopedResource()
+                defer { if secured { url.stopAccessingSecurityScopedResource() } }
+                pendingImportData = try? Data(contentsOf: url)
+                importSucceeded = pendingImportData != nil
+                if pendingImportData == nil { showImportResult = true }
+            }
+            .alert("Replace all data?", isPresented: Binding(
+                get: { pendingImportData != nil },
+                set: { if !$0 { pendingImportData = nil } }
+            )) {
+                Button("Import", role: .destructive) {
+                    if let data = pendingImportData {
+                        importSucceeded = StorageWorker.shared.importJSON(data)
+                        showImportResult = true
+                        store.interactor?.load(request: .init())
+                    }
+                    pendingImportData = nil
+                }
+                Button("Cancel", role: .cancel) { pendingImportData = nil }
+            } message: {
+                Text("Everything in Jarz will be replaced with the backup contents.")
+            }
+            .alert(importSucceeded ? Text("Data imported") : Text("Import failed"),
+                   isPresented: $showImportResult) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                if !importSucceeded {
+                    Text("The file doesn't look like a Jarz backup.")
+                }
+            }
         }
         .tint(Theme.ink)
     }
+
+    @State private var showImportPicker = false
+    @State private var pendingImportData: Data?
+    @State private var showImportResult = false
+    @State private var importSucceeded = false
 
     @State private var showUndoToast = false
 
