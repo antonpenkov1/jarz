@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @State private var selectedTab = RootView.initialTab
     @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -31,6 +32,12 @@ struct RootView: View {
             #endif
         }
         .onChange(of: appearanceRaw) { appearanceMode.apply() }
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasSeenOnboarding },
+            set: { if !$0 { hasSeenOnboarding = true } }
+        )) {
+            OnboardingView { hasSeenOnboarding = true }
+        }
     }
 
     private var appearanceMode: AppearanceMode {
