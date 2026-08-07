@@ -124,6 +124,7 @@ struct IncomeView: View {
 
                     CapsuleButton(title: "Add to balances", disabled: store.allocatedTotal <= 0) {
                         store.interactor?.save(request: .init(amounts: store.amounts))
+                        Haptics.success()
                     }
                     .padding(.top, 32)
                 }

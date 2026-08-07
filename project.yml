@@ -9,12 +9,16 @@ targets:
     platform: iOS
     sources:
       - Jarz
+    dependencies:
+      - target: JarzWidget
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.antonpenkov.jarz
         DEVELOPMENT_TEAM: 3UHRLQ9522
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIconPaper AppIconJar
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         CODE_SIGN_ENTITLEMENTS: Jarz/Jarz.entitlements
         INFOPLIST_KEY_UIBackgroundModes: remote-notification
@@ -24,5 +28,31 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Jarz
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CURRENT_PROJECT_VERSION: 1
+        CURRENT_PROJECT_VERSION: 2
         MARKETING_VERSION: 1.1
+  JarzWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: JarzWidget
+      - path: Jarz/Core/Models.swift
+      - path: Jarz/Core/MoneyFormat.swift
+      - path: Jarz/Core/WidgetShared.swift
+      - path: Jarz/Localizable.xcstrings
+    info:
+      path: JarzWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Jarz
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.antonpenkov.jarz.widget
+        DEVELOPMENT_TEAM: 3UHRLQ9522
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: JarzWidget/JarzWidget.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+        CURRENT_PROJECT_VERSION: 2
+        MARKETING_VERSION: 1.1
+        SKIP_INSTALL: YES

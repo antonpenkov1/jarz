@@ -54,6 +54,7 @@ struct QuickExpenseSheet: View {
                     Button("Save") {
                         if let amount = MoneyFormat.parse(amountText), amount > 0 {
                             onSave(amount, note)
+                            Haptics.success()
                         }
                     }
                     .fontWeight(.semibold)
