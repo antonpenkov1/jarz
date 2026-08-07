@@ -176,6 +176,11 @@ struct CategoryDetailView: View {
                     Hairline()
                 }
 
+                AmountChips { value in
+                    let current = MoneyFormat.parse(store.formAmount) ?? 0
+                    store.formAmount = "\(NSDecimalNumber(decimal: current + value))"
+                }
+
                 TextField("Note (optional)", text: $store.formNote)
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)

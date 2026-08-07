@@ -162,6 +162,30 @@ extension View {
     }
 }
 
+/// Quick-amount chips for expense forms; each tap adds to the current value.
+struct AmountChips: View {
+    let onAdd: (Decimal) -> Void
+    private static let values: [Int] = [100, 500, 1000]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Self.values, id: \.self) { value in
+                Button {
+                    onAdd(Decimal(value))
+                } label: {
+                    Text("+\(value)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Capsule().stroke(Theme.hairline, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
 /// 2pt progress line used instead of a stock progress bar.
 struct ProgressLine: View {
     let progress: Double

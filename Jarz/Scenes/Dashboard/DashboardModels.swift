@@ -1,6 +1,14 @@
 import Foundation
 
 enum Dashboard {
+    enum AddExpense {
+        struct Request {
+            let categoryId: UUID
+            let amount: Decimal
+            let note: String
+        }
+    }
+
     enum Load {
         struct Request {}
 

@@ -2,6 +2,7 @@ import Foundation
 
 protocol DashboardBusinessLogic {
     func load(request: Dashboard.Load.Request)
+    func addExpense(request: Dashboard.AddExpense.Request)
 }
 
 final class DashboardInteractor: DashboardBusinessLogic {
@@ -11,6 +12,17 @@ final class DashboardInteractor: DashboardBusinessLogic {
     init(presenter: DashboardPresentationLogic, worker: StorageWorker = .shared) {
         self.presenter = presenter
         self.worker = worker
+    }
+
+    func addExpense(request: Dashboard.AddExpense.Request) {
+        worker.addTransaction(
+            categoryId: request.categoryId,
+            kind: .expense,
+            amount: request.amount,
+            note: request.note,
+            date: Date()
+        )
+        load(request: .init())
     }
 
     func load(request: Dashboard.Load.Request) {
