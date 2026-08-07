@@ -142,6 +142,22 @@ struct IncomeView: View {
                 if UserDefaults.standard.bool(forKey: "FocusSalary") {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { salaryFocused = true }
                 }
+                // Screenshot hook: `-DemoIncome 1` fills the form with showcase numbers.
+                if UserDefaults.standard.bool(forKey: "DemoIncome") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        store.salaryText = "150000"
+                        let demo: [String: String] = ["Apartment": "40000", "Bills": "16000",
+                                                      "Gifts": "3000", "Trips": "25000",
+                                                      "Sport": "3500", "Savings": "12000",
+                                                      "Clothes": "8000", "Skincare": "4500",
+                                                      "Phone": "2000"]
+                        for row in store.viewModel.rows {
+                            if let amount = demo[row.name] {
+                                store.amounts[row.id] = amount
+                            }
+                        }
+                    }
+                }
                 #endif
             }
             .alert("Done", isPresented: Binding(
