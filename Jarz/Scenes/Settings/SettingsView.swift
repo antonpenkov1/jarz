@@ -81,6 +81,7 @@ enum SettingsConfigurator {
 struct SettingsView: View {
     @StateObject private var store: SettingsViewStore
     @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
+    @State private var showOnboarding = false
 
     init(store: SettingsViewStore) {
         _store = StateObject(wrappedValue: store)
@@ -133,6 +134,24 @@ struct SettingsView: View {
                     .labelsHidden()
                 }
 
+                section("About") {
+                    Button {
+                        showOnboarding = true
+                    } label: {
+                        HStack {
+                            Text("How Jarz works")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Theme.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Section {
                     jarsRows
                         .listRowBackground(Theme.bg)
@@ -182,6 +201,9 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { store.pendingDeleteId = nil }
             } message: {
                 Text("The jar and its whole history will be removed.")
+            }
+            .fullScreenCover(isPresented: $showOnboarding) {
+                OnboardingView { showOnboarding = false }
             }
         }
         .tint(Theme.ink)
