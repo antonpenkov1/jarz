@@ -61,12 +61,15 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 - В описании на стор заменить пункт «Your data stays on your phone. No account, no cloud…» на:
   «Your data stays yours: stored on your phone and synced through your private iCloud — invisible to anyone else. No account, no tracking, no ads.»
 - Локализации UI: ru, sr-Latn, es, it, fr, de (Localizable.xcstrings). Метаданные стора можно локализовать в ASC отдельно.
-- What's New 1.1:
+- What's New 1.1 (final, build 3):
   • Sync across your devices through your private iCloud.
+  • Home screen widget: your food budget for today, always in sight.
   • Jarz now speaks Russian, Serbian, Spanish, Italian, French and German.
+  • First-launch walkthrough: see how Jarz works in four short steps.
+  • Add expenses faster: long-press any jar, or tap the +100/+500/+1000 chips.
   • Zero out a revision in one tap: book the difference straight into a jar.
-  • Back up your data anytime: Settings → Export data.
-  • First-launch walkthrough + faster expense entry (long-press a jar, +100/+500/+1000 chips).
+  • Back up and restore: export your data and import it anywhere.
+  • Pick your app icon, undo accidental deletes, and feel a gentle tap on every save.
 
 ## Assets
 
