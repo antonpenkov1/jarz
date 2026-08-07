@@ -327,39 +327,80 @@ final class StorageWorker {
         save()
     }
 
+    private struct BackupPayload: Codable {
+        var exportedAt: Date
+        var categories: [BudgetCategory]
+        var transactions: [MoneyTransaction]
+        var settings: AppSettings
+        var accounts: [ReconciliationAccount]
+        var revisions: [BackupRevision]
+    }
+
+    private struct BackupRevision: Codable {
+        var date: Date
+        var planned: Decimal
+        var counted: Decimal
+        var entries: [RevisionEntry]
+    }
+
     /// Full backup of everything the app knows, as pretty-printed JSON.
     func exportJSON() -> Data? {
-        struct Export: Codable {
-            let exportedAt: Date
-            let categories: [BudgetCategory]
-            let transactions: [MoneyTransaction]
-            let settings: AppSettings
-            let accounts: [ReconciliationAccount]
-            let revisions: [ExportRevision]
-        }
-        struct ExportRevision: Codable {
-            let date: Date
-            let planned: Decimal
-            let counted: Decimal
-            let entries: [RevisionEntry]
-        }
         let allTransactions = sortedCategories()
             .flatMap { transactions(categoryId: $0.id) }
             .sorted { $0.date < $1.date }
-        let payload = Export(
+        let payload = BackupPayload(
             exportedAt: Date(),
             categories: sortedCategories(),
             transactions: allTransactions,
             settings: settings(),
             accounts: accounts(),
             revisions: revisions().map {
-                ExportRevision(date: $0.date, planned: $0.planned, counted: $0.counted, entries: $0.entries)
+                BackupRevision(date: $0.date, planned: $0.planned, counted: $0.counted, entries: $0.entries)
             }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         return try? encoder.encode(payload)
+    }
+
+    /// Restores a backup produced by `exportJSON`, replacing everything.
+    /// Returns false if the data doesn't decode as a Jarz backup.
+    func importJSON(_ data: Data) -> Bool {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let payload = try? decoder.decode(BackupPayload.self, from: data) else { return false }
+
+        for model in (try? context.fetch(FetchDescriptor<JarTransaction>())) ?? [] { context.delete(model) }
+        for model in (try? context.fetch(FetchDescriptor<JarCategory>())) ?? [] { context.delete(model) }
+        for model in (try? context.fetch(FetchDescriptor<JarAccount>())) ?? [] { context.delete(model) }
+        for model in (try? context.fetch(FetchDescriptor<JarRevision>())) ?? [] { context.delete(model) }
+        for model in (try? context.fetch(FetchDescriptor<JarSettings>())) ?? [] { context.delete(model) }
+
+        for category in payload.categories {
+            context.insert(JarCategory(id: category.id, name: category.name, order: category.order))
+        }
+        for transaction in payload.transactions {
+            context.insert(JarTransaction(
+                id: transaction.id, categoryId: transaction.categoryId, kind: transaction.kind,
+                amount: transaction.amount, note: transaction.note, date: transaction.date))
+        }
+        for (index, account) in payload.accounts.enumerated() {
+            context.insert(JarAccount(id: account.id, name: account.name,
+                                      amount: account.amount, order: index))
+        }
+        for revision in payload.revisions {
+            let entriesData = (try? JSONEncoder().encode(revision.entries)) ?? Data()
+            context.insert(JarRevision(date: revision.date, planned: revision.planned,
+                                       counted: revision.counted, entriesData: entriesData))
+        }
+        saveSettings(payload.settings)
+        return true
+    }
+
+    /// True when the store is CloudKit-backed and an iCloud account is signed in.
+    func iCloudSyncActive() -> Bool {
+        Self.iCloudSyncEnabled && FileManager.default.ubiquityIdentityToken != nil
     }
 
     func deleteRevision(id: UUID) {

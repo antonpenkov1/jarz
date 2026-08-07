@@ -28,7 +28,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Jarz
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CURRENT_PROJECT_VERSION: 2
+        CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: 1.1
   JarzWidget:
     type: app-extension
@@ -53,6 +53,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: JarzWidget/JarzWidget.entitlements
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CURRENT_PROJECT_VERSION: 2
+        CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: 1.1
         SKIP_INSTALL: YES
