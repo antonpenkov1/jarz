@@ -161,12 +161,12 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 0) {
             SectionLabel(step)
                 .padding(.top, 36)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(Theme.serif(34, .medium))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.secondary)
                 .lineSpacing(4)
@@ -183,11 +183,12 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(name)
+                    Text(LocalizedStringKey(name))
                         .font(.system(size: 16))
                         .foregroundStyle(Theme.ink)
                     if let hint {
-                        Text(hint.uppercased())
+                        Text(LocalizedStringKey(hint))
+                            .textCase(.uppercase)
                             .font(.system(size: 9, weight: .semibold))
                             .tracking(1.2)
                             .foregroundStyle(Theme.accent)

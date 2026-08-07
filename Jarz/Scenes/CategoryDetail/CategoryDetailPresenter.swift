@@ -22,12 +22,13 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
            let plan = FoodMath.plan(balance: response.balance, daily: response.dailyFoodAmount,
                                     planEnd: response.foodPlanEnd) {
             if response.balance < 0 {
-                foodLine = "Over budget"
+                foodLine = String(localized: "Over budget")
             } else {
-                foodLine = "\(MoneyFormat.money(plan.available, symbol: symbol)) for \(FoodDay.phrase(for: plan.dayDate))"
+                let money = MoneyFormat.money(plan.available, symbol: symbol)
+                foodLine = String(localized: "\(money) for \(FoodDay.phrase(for: plan.dayDate))")
                     + (plan.daysLeft > 0
-                        ? " · +\(plan.daysLeft) day\(plan.daysLeft == 1 ? "" : "s") until \(FoodDay.dateText(plan.planEnd))"
-                        : " · until \(FoodDay.dateText(plan.planEnd))")
+                        ? String(localized: " · +\(plan.daysLeft) days until \(FoodDay.dateText(plan.planEnd))")
+                        : String(localized: " · until \(FoodDay.dateText(plan.planEnd))"))
             }
         }
 
@@ -39,7 +40,7 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
                 amountText: (transaction.kind == .expense ? "−" : "+")
                     + MoneyFormat.money(transaction.amount, symbol: symbol),
                 isExpense: transaction.kind == .expense,
-                kindLabel: transaction.kind == .allocation ? "Income day" : ""
+                kindLabel: transaction.kind == .allocation ? String(localized: "Income day") : ""
             )
         }
 

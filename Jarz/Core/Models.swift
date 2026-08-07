@@ -91,8 +91,8 @@ enum FoodDay {
         ).day ?? 0
         let dateText = formatter.string(from: dayDate)
         switch days {
-        case 0: return "today, \(dateText)"
-        case 1: return "tomorrow, \(dateText)"
+        case 0: return String(localized: "today, \(dateText)")
+        case 1: return String(localized: "tomorrow, \(dateText)")
         default: return dateText
         }
     }

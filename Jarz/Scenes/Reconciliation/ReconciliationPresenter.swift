@@ -42,7 +42,8 @@ final class ReconciliationPresenter: ReconciliationPresentationLogic {
             appTotal: response.appTotal,
             appTotalText: MoneyFormat.money(response.appTotal, symbol: symbol),
             currencySymbol: symbol,
-            revisions: revisions
+            revisions: revisions,
+            jars: response.categories.map { .init(id: $0.id, name: $0.name) }
         ))
     }
 }

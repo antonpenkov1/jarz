@@ -64,7 +64,7 @@ final class SettingsViewStore: ObservableObject, SettingsDisplayLogic {
     var monthlyFoodHint: String? {
         guard let daily = MoneyFormat.parse(dailyFoodText), daily > 0 else { return nil }
         let monthly = daily * Decimal(AppSettings.foodHorizonDays)
-        return "On income day: \(MoneyFormat.amount(daily)) × \(AppSettings.foodHorizonDays) = \(MoneyFormat.money(monthly, symbol: currencySymbol))"
+        return String(localized: "On income day: \(MoneyFormat.amount(daily)) × \(AppSettings.foodHorizonDays) = \(MoneyFormat.money(monthly, symbol: currencySymbol))")
     }
 }
 
@@ -150,6 +150,22 @@ struct SettingsView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        exportData()
+                    } label: {
+                        HStack {
+                            Text("Export data")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Theme.ink)
+                            Spacer()
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Theme.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 Section {
@@ -160,8 +176,10 @@ struct SettingsView: View {
                     HStack {
                         SectionLabel("Jars")
                         Spacer()
-                        Button(editMode.isEditing ? "Done" : "Reorder") {
+                        Button {
                             withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+                        } label: {
+                            editMode.isEditing ? Text("Done") : Text("Reorder")
                         }
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Theme.accent)
@@ -205,9 +223,29 @@ struct SettingsView: View {
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView { showOnboarding = false }
             }
+            .sheet(item: $exportURL) { item in
+                ShareSheet(items: [item.url])
+            }
         }
         .tint(Theme.ink)
     }
+
+    private func exportData() {
+        guard let data = StorageWorker.shared.exportJSON() else { return }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Jarz-backup-\(formatter.string(from: Date())).json")
+        guard (try? data.write(to: url)) != nil else { return }
+        exportURL = ExportItem(url: url)
+    }
+
+    private struct ExportItem: Identifiable {
+        let url: URL
+        var id: String { url.absoluteString }
+    }
+
+    @State private var exportURL: ExportItem?
 
     @State private var editMode: EditMode = .inactive
 
@@ -253,7 +291,7 @@ struct SettingsView: View {
 
     private func amountRow(_ label: String, text: Binding<String>) -> some View {
         HStack {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.ink)
             Spacer()
@@ -266,7 +304,7 @@ struct SettingsView: View {
     }
 
     private func categoryPicker(_ title: String, selection: Binding<UUID?>) -> some View {
-        Picker(title, selection: selection) {
+        Picker(LocalizedStringKey(title), selection: selection) {
             Text("None").tag(UUID?.none)
             ForEach(store.categories) { category in
                 Text(category.name).tag(UUID?.some(category.id))

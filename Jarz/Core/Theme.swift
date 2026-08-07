@@ -73,7 +73,8 @@ struct SectionLabel: View {
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View {
-        Text(text.uppercased())
+        Text(LocalizedStringKey(text))
+            .textCase(.uppercase)
             .font(.system(size: 12, weight: .semibold))
             .tracking(2.4)
             .foregroundStyle(Theme.secondary)
@@ -97,7 +98,7 @@ struct CapsuleButton: View {
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(Theme.bg)
                 .frame(maxWidth: .infinity)
@@ -160,6 +161,18 @@ extension View {
     func keyboardDoneButton() -> some View {
         modifier(KeyboardDoneBar())
     }
+}
+
+/// UIKit share sheet — SwiftUI's ShareLink needs the payload up front,
+/// this one lets us build the file on tap.
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
 /// Quick-amount chips for expense forms; each tap adds to the current value.

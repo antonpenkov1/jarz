@@ -189,7 +189,8 @@ struct CategoryDetailView: View {
             }
             .padding(28)
             .background(Theme.bg.ignoresSafeArea())
-            .navigationTitle(store.editingTransactionId == nil ? "New operation" : "Edit operation")
+            .navigationTitle(store.editingTransactionId == nil
+                ? Text("New operation") : Text("Edit operation"))
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDoneButton()
             .toolbar {
