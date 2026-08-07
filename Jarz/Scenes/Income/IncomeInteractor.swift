@@ -21,17 +21,20 @@ final class IncomeInteractor: IncomeBusinessLogic {
         let prefills = worker.sortedCategories().map { category -> Income.Prepare.Response.Prefill in
             if category.id == settings.foodCategoryId && settings.dailyFoodAmount > 0 {
                 let amount = settings.dailyFoodAmount * Decimal(AppSettings.foodHorizonDays)
+                let daily = MoneyFormat.money(settings.dailyFoodAmount, symbol: symbol)
                 return .init(
                     category: category,
                     amount: amount,
-                    autoHint: "auto: \(MoneyFormat.money(settings.dailyFoodAmount, symbol: symbol)) × \(AppSettings.foodHorizonDays) days"
+                    autoHint: String(localized: "auto: \(daily) × \(AppSettings.foodHorizonDays) days")
                 )
             }
             if category.id == settings.apartmentCategoryId && settings.apartmentAmount > 0 {
-                return .init(category: category, amount: settings.apartmentAmount, autoHint: "auto: monthly fixed")
+                return .init(category: category, amount: settings.apartmentAmount,
+                             autoHint: String(localized: "auto: monthly fixed"))
             }
             if category.id == settings.billsCategoryId && settings.billsAmount > 0 {
-                return .init(category: category, amount: settings.billsAmount, autoHint: "auto: monthly fixed")
+                return .init(category: category, amount: settings.billsAmount,
+                             autoHint: String(localized: "auto: monthly fixed"))
             }
             return .init(category: category, amount: 0, autoHint: nil)
         }
@@ -53,7 +56,7 @@ final class IncomeInteractor: IncomeBusinessLogic {
                 categoryId: category.id,
                 kind: .allocation,
                 amount: amount,
-                note: "Income",
+                note: String(localized: "Income"),
                 date: date
             )
         }

@@ -23,14 +23,16 @@ final class DashboardPresenter: DashboardPresentationLogic {
                 name: food.category.name,
                 balanceText: MoneyFormat.money(food.balance, symbol: symbol),
                 heroText: MoneyFormat.amount(isNegative ? food.balance : plan.available),
-                heroCaption: isNegative ? "over budget" : "\(symbol) left for ",
+                heroCaption: isNegative
+                    ? String(localized: "over budget")
+                    : String(localized: "\(symbol) left for "),
                 heroCaptionDay: isNegative ? "" : FoodDay.phrase(for: plan.dayDate),
                 isDayAhead: !isNegative && plan.isAhead,
                 daysText: isNegative
                     ? ""
                     : (plan.daysLeft > 0
-                        ? "+\(plan.daysLeft) day\(plan.daysLeft == 1 ? "" : "s") · until \(FoodDay.dateText(plan.planEnd))"
-                        : "last plan day · until \(FoodDay.dateText(plan.planEnd))"),
+                        ? String(localized: "+\(plan.daysLeft) days · until \(FoodDay.dateText(plan.planEnd))")
+                        : String(localized: "last plan day · until \(FoodDay.dateText(plan.planEnd))")),
                 isNegative: isNegative,
                 dayProgress: progress
             )

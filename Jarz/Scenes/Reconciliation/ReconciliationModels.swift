@@ -9,6 +9,7 @@ enum Reconciliation {
             let appTotal: Decimal
             let currencySymbol: String
             let revisions: [RevisionRecord]
+            let categories: [BudgetCategory]
         }
 
         struct ViewModel {
@@ -31,14 +32,19 @@ enum Reconciliation {
                 let countedText: String
                 let entries: [EntryRow]
             }
+            struct JarOption: Identifiable {
+                let id: UUID
+                let name: String
+            }
             let accounts: [AccountForm]
             let appTotal: Decimal
             let appTotalText: String
             let currencySymbol: String
             let revisions: [RevisionRow]
+            let jars: [JarOption]
 
             static let empty = ViewModel(
-                accounts: [], appTotal: 0, appTotalText: "", currencySymbol: "", revisions: [])
+                accounts: [], appTotal: 0, appTotalText: "", currencySymbol: "", revisions: [], jars: [])
         }
     }
 
@@ -56,6 +62,14 @@ enum Reconciliation {
     enum DeleteRevision {
         struct Request {
             let id: UUID
+        }
+    }
+
+    enum ZeroOut {
+        struct Request {
+            let categoryId: UUID
+            /// Live difference from the form: counted − planned.
+            let difference: Decimal
         }
     }
 }

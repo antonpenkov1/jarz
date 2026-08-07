@@ -22,6 +22,6 @@ final class IncomePresenter: IncomePresentationLogic {
 
     func presentSaved(response: Income.Save.Response) {
         let total = MoneyFormat.money(response.allocatedTotal, symbol: response.currencySymbol)
-        view?.displaySaved(viewModel: .init(message: "Added \(total) to your categories."))
+        view?.displaySaved(viewModel: .init(message: String(localized: "Added \(total) to your categories.")))
     }
 }

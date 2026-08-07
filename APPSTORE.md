@@ -55,7 +55,18 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 7. В Xcode: выбрать destination **Any iOS Device (arm64)** → Product → **Archive** → Organizer → **Distribute App** → App Store Connect → Upload.
 8. В App Store Connect: выбрать загруженный билд, отправить на ревью. Первое ревью обычно 1–3 дня.
 
-Примечание: iCloud-синхронизацию решили включить в 1.1 (код готов: флаг `iCloudSyncEnabled` + entitlements в project.yml). Для 1.1 не забыть обновить описание («no cloud» → private iCloud sync).
+## 1.1 (2026-08-07)
+
+- iCloud-синхронизация ВКЛЮЧЕНА (private CloudKit DB; App Privacy остаётся «Data Not Collected» — данные в личном iCloud пользователя, разработчику недоступны).
+- В описании на стор заменить пункт «Your data stays on your phone. No account, no cloud…» на:
+  «Your data stays yours: stored on your phone and synced through your private iCloud — invisible to anyone else. No account, no tracking, no ads.»
+- Локализации UI: ru, sr-Latn, es, it, fr, de (Localizable.xcstrings). Метаданные стора можно локализовать в ASC отдельно.
+- What's New 1.1:
+  • Sync across your devices through your private iCloud.
+  • Jarz now speaks Russian, Serbian, Spanish, Italian, French and German.
+  • Zero out a revision in one tap: book the difference straight into a jar.
+  • Back up your data anytime: Settings → Export data.
+  • First-launch walkthrough + faster expense entry (long-press a jar, +100/+500/+1000 chips).
 
 ## Assets
 

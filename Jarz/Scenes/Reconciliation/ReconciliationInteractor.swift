@@ -4,6 +4,7 @@ protocol ReconciliationBusinessLogic {
     func load(request: Reconciliation.Load.Request)
     func save(request: Reconciliation.Save.Request)
     func deleteRevision(request: Reconciliation.DeleteRevision.Request)
+    func zeroOut(request: Reconciliation.ZeroOut.Request)
 }
 
 final class ReconciliationInteractor: ReconciliationBusinessLogic {
@@ -20,8 +21,23 @@ final class ReconciliationInteractor: ReconciliationBusinessLogic {
             accounts: worker.accounts(),
             appTotal: worker.totalBalance(),
             currencySymbol: worker.settings().currencySymbol,
-            revisions: worker.revisions()
+            revisions: worker.revisions(),
+            categories: worker.sortedCategories()
         ))
+    }
+
+    /// Books the revision difference onto a jar so plan matches reality:
+    /// missing money becomes an expense, surplus becomes a top-up.
+    func zeroOut(request: Reconciliation.ZeroOut.Request) {
+        guard request.difference != 0 else { return }
+        worker.addTransaction(
+            categoryId: request.categoryId,
+            kind: request.difference < 0 ? .expense : .topUp,
+            amount: abs(request.difference),
+            note: String(localized: "Revision adjustment"),
+            date: Date()
+        )
+        load(request: .init())
     }
 
     func save(request: Reconciliation.Save.Request) {

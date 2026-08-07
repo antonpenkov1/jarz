@@ -100,9 +100,10 @@ final class StorageWorker {
 
     static let stateDidChange = Notification.Name("StorageWorker.stateDidChange")
 
-    /// iCloud sync needs a paid Apple Developer account (CloudKit entitlements).
-    /// Flip to true together with CODE_SIGN_ENTITLEMENTS in project.yml.
-    private static let iCloudSyncEnabled = false
+    /// Syncs through the user's private iCloud database (paid dev account,
+    /// entitlements wired in project.yml). Falls back to a local store when
+    /// iCloud is unavailable.
+    private static let iCloudSyncEnabled = true
 
     private let container: ModelContainer
     private let context: ModelContext
@@ -300,6 +301,41 @@ final class StorageWorker {
         save()
     }
 
+    /// Full backup of everything the app knows, as pretty-printed JSON.
+    func exportJSON() -> Data? {
+        struct Export: Codable {
+            let exportedAt: Date
+            let categories: [BudgetCategory]
+            let transactions: [MoneyTransaction]
+            let settings: AppSettings
+            let accounts: [ReconciliationAccount]
+            let revisions: [ExportRevision]
+        }
+        struct ExportRevision: Codable {
+            let date: Date
+            let planned: Decimal
+            let counted: Decimal
+            let entries: [RevisionEntry]
+        }
+        let allTransactions = sortedCategories()
+            .flatMap { transactions(categoryId: $0.id) }
+            .sorted { $0.date < $1.date }
+        let payload = Export(
+            exportedAt: Date(),
+            categories: sortedCategories(),
+            transactions: allTransactions,
+            settings: settings(),
+            accounts: accounts(),
+            revisions: revisions().map {
+                ExportRevision(date: $0.date, planned: $0.planned, counted: $0.counted, entries: $0.entries)
+            }
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try? encoder.encode(payload)
+    }
+
     func deleteRevision(id: UUID) {
         let fetch = FetchDescriptor<JarRevision>(predicate: #Predicate { $0.id == id })
         guard let model = (try? context.fetch(fetch))?.first else { return }
@@ -379,12 +415,14 @@ final class StorageWorker {
         let count = (try? context.fetchCount(FetchDescriptor<JarCategory>())) ?? 0
         guard count == 0 else { return }
 
-        let names = ["Food", "Apartment", "Bills", "Gifts", "Trips", "Sport",
-                     "Savings", "Clothes", "Skincare", "Phone"]
+        // Seed names are localized once at creation; afterwards they're user data.
+        let keys = ["Food", "Apartment", "Bills", "Gifts", "Trips", "Sport",
+                    "Savings", "Clothes", "Skincare", "Phone"]
         var created: [String: JarCategory] = [:]
-        for (index, name) in names.enumerated() {
-            let category = JarCategory(name: name, order: index)
-            created[name] = category
+        for (index, key) in keys.enumerated() {
+            let category = JarCategory(
+                name: NSLocalizedString(key, comment: "seed jar name"), order: index)
+            created[key] = category
             context.insert(category)
         }
         let settings = JarSettings()

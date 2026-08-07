@@ -10,6 +10,7 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
     @Published var appTotalText = ""
     @Published var currencySymbol = ""
     @Published var revisions: [Reconciliation.Load.ViewModel.RevisionRow] = []
+    @Published var jars: [Reconciliation.Load.ViewModel.JarOption] = []
     var interactor: ReconciliationBusinessLogic?
 
     func displayAccounts(viewModel: Reconciliation.Load.ViewModel) {
@@ -18,6 +19,7 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
         appTotalText = viewModel.appTotalText
         currencySymbol = viewModel.currencySymbol
         revisions = viewModel.revisions
+        jars = viewModel.jars
     }
 
     var countedTotal: Decimal {
@@ -128,14 +130,34 @@ struct ReconciliationView: View {
                             Text("Perfect — your plan matches reality.")
                                 .foregroundStyle(Theme.accent)
                         } else if store.difference != 0 {
-                            Text(store.difference > 0
-                                 ? "You have more money than planned. Add the extra to a jar to zero out."
-                                 : "Some money is unaccounted for. Record the missing expenses to zero out.")
+                            (store.difference > 0
+                                 ? Text("You have more money than planned. Add the extra to a jar to zero out.")
+                                 : Text("Some money is unaccounted for. Record the missing expenses to zero out."))
                                 .foregroundStyle(Theme.secondary)
                         }
                     }
                     .font(.system(size: 14))
                     .padding(.top, 16)
+
+                    if store.difference != 0 {
+                        Button {
+                            showZeroOutDialog = true
+                        } label: {
+                            (store.difference > 0
+                                ? Text("Add the difference to a jar") : Text("Write off the difference"))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .padding(.top, 12)
+                        .confirmationDialog("Choose a jar", isPresented: $showZeroOutDialog, titleVisibility: .visible) {
+                            ForEach(store.jars) { jar in
+                                Button(jar.name) {
+                                    store.interactor?.zeroOut(request: .init(
+                                        categoryId: jar.id, difference: store.difference))
+                                }
+                            }
+                        }
+                    }
 
                     CapsuleButton(title: "Save revision") {
                         store.save()
@@ -177,6 +199,7 @@ struct ReconciliationView: View {
     }
 
     @State private var expandedRevisions: Set<UUID> = []
+    @State private var showZeroOutDialog = false
 
     @ViewBuilder
     private func revisionRow(_ revision: Reconciliation.Load.ViewModel.RevisionRow) -> some View {
@@ -229,7 +252,7 @@ struct ReconciliationView: View {
 
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.system(size: 14))
                 .foregroundStyle(Theme.secondary)
             Spacer()
@@ -239,7 +262,7 @@ struct ReconciliationView: View {
 
     private func resultRow(_ label: String, _ value: String, color: Color) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.system(size: 16))
                 .foregroundStyle(Theme.secondary)
             Spacer()
