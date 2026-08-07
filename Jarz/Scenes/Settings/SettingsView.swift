@@ -132,6 +132,8 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+
+                    appIconRow
                 }
 
                 section("About") {
@@ -213,6 +215,7 @@ struct SettingsView: View {
                 Button("Delete", role: .destructive) {
                     if let id = store.pendingDeleteId {
                         store.interactor?.deleteCategory(request: .init(id: id))
+                        showUndoToast = true
                     }
                     store.pendingDeleteId = nil
                 }
@@ -226,9 +229,59 @@ struct SettingsView: View {
             .sheet(item: $exportURL) { item in
                 ShareSheet(items: [item.url])
             }
+            .undoToast(isPresented: $showUndoToast) {
+                store.interactor?.undoDeleteCategory()
+            }
         }
         .tint(Theme.ink)
     }
+
+    @State private var showUndoToast = false
+
+    // MARK: App icon
+
+    private struct IconChoice: Identifiable {
+        let id: String          // alternate icon name; empty = primary
+        let preview: String
+        var alternateName: String? { id.isEmpty ? nil : id }
+    }
+
+    private static let iconChoices: [IconChoice] = [
+        IconChoice(id: "", preview: "IconPreviewInk"),
+        IconChoice(id: "AppIconPaper", preview: "IconPreviewPaper"),
+        IconChoice(id: "AppIconJar", preview: "IconPreviewJar"),
+    ]
+
+    private var appIconRow: some View {
+        HStack(spacing: 0) {
+            Text("App icon")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            HStack(spacing: 14) {
+                ForEach(Self.iconChoices) { choice in
+                    Button {
+                        UIApplication.shared.setAlternateIconName(choice.alternateName)
+                        selectedIcon = choice.id
+                        Haptics.tap()
+                    } label: {
+                        Image(choice.preview)
+                            .resizable()
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(selectedIcon == choice.id ? Theme.accent : Theme.hairline,
+                                            lineWidth: selectedIcon == choice.id ? 2 : 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    @State private var selectedIcon = UIApplication.shared.alternateIconName ?? ""
 
     private func exportData() {
         guard let data = StorageWorker.shared.exportJSON() else { return }

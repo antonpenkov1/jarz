@@ -163,6 +163,59 @@ extension View {
     }
 }
 
+/// Bottom toast with an Undo action, boutique style. Auto-hides after 4s.
+struct UndoToast: ViewModifier {
+    @Binding var isPresented: Bool
+    let onUndo: () -> Void
+
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .bottom) {
+            if isPresented {
+                HStack(spacing: 16) {
+                    Text("Deleted")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.bg)
+                    Button {
+                        onUndo()
+                        isPresented = false
+                    } label: {
+                        Text("Undo")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.bg)
+                            .underline()
+                    }
+                }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 13)
+                .background(Capsule().fill(Theme.ink))
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .task {
+                    try? await Task.sleep(for: .seconds(4))
+                    isPresented = false
+                }
+            }
+        }
+        .animation(.easeOut(duration: 0.25), value: isPresented)
+    }
+}
+
+extension View {
+    func undoToast(isPresented: Binding<Bool>, onUndo: @escaping () -> Void) -> some View {
+        modifier(UndoToast(isPresented: isPresented, onUndo: onUndo))
+    }
+}
+
+enum Haptics {
+    static func success() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    static func tap() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+}
+
 /// UIKit share sheet — SwiftUI's ShareLink needs the payload up front,
 /// this one lets us build the file on tap.
 struct ShareSheet: UIViewControllerRepresentable {

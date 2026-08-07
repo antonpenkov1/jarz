@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import SwiftData
+import WidgetKit
 
 // MARK: - SwiftData models
 // CloudKit rules: every attribute needs a default, no unique constraints.
@@ -127,6 +128,7 @@ final class StorageWorker {
 
         migrateFromJSONIfNeeded()
         seedIfNeeded()
+        publishWidgetSnapshot()
 
         // CloudKit pushes arrive as Core Data remote-change notifications.
         NotificationCenter.default.addObserver(
@@ -219,6 +221,30 @@ final class StorageWorker {
     func deleteTransaction(id: UUID) {
         guard let model = transactionModel(id: id) else { return }
         context.delete(model)
+        save()
+    }
+
+    /// Re-inserts a deleted transaction with its original id (undo).
+    func restoreTransaction(_ dto: MoneyTransaction) {
+        context.insert(JarTransaction(id: dto.id, categoryId: dto.categoryId, kind: dto.kind,
+                                      amount: dto.amount, note: dto.note, date: dto.date))
+        save()
+    }
+
+    /// Re-inserts a deleted category with its history and settings links (undo).
+    func restoreCategory(_ dto: BudgetCategory, transactions: [MoneyTransaction],
+                         wasFood: Bool, wasApartment: Bool, wasBills: Bool) {
+        context.insert(JarCategory(id: dto.id, name: dto.name, order: dto.order))
+        for transaction in transactions {
+            context.insert(JarTransaction(
+                id: transaction.id, categoryId: transaction.categoryId, kind: transaction.kind,
+                amount: transaction.amount, note: transaction.note, date: transaction.date))
+        }
+        if let settings = settingsModel() {
+            if wasFood { settings.foodCategoryId = dto.id }
+            if wasApartment { settings.apartmentCategoryId = dto.id }
+            if wasBills { settings.billsCategoryId = dto.id }
+        }
         save()
     }
 
@@ -348,6 +374,26 @@ final class StorageWorker {
     private func save() {
         try? context.save()
         NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
+        publishWidgetSnapshot()
+    }
+
+    /// Mirrors the food state into the app group so the widget can render
+    /// without touching the SwiftData store.
+    func publishWidgetSnapshot() {
+        let settings = settings()
+        guard let foodId = settings.foodCategoryId, settings.dailyFoodAmount > 0 else {
+            WidgetShared.save(nil)
+            WidgetCenter.shared.reloadAllTimelines()
+            return
+        }
+        WidgetShared.save(FoodSnapshot(
+            name: category(id: foodId)?.name ?? NSLocalizedString("Food", comment: ""),
+            balance: balance(of: foodId),
+            daily: settings.dailyFoodAmount,
+            planEnd: settings.foodPlanEnd,
+            currencySymbol: settings.currencySymbol
+        ))
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private static func dto(_ model: JarTransaction) -> MoneyTransaction {

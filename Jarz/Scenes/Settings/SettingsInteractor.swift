@@ -6,6 +6,7 @@ protocol SettingsBusinessLogic {
     func addCategory(request: Settings.AddCategory.Request)
     func renameCategory(request: Settings.RenameCategory.Request)
     func deleteCategory(request: Settings.DeleteCategory.Request)
+    func undoDeleteCategory()
     func moveCategory(request: Settings.MoveCategory.Request)
 }
 
@@ -51,8 +52,36 @@ final class SettingsInteractor: SettingsBusinessLogic {
         worker.renameCategory(id: request.id, name: name)
     }
 
+    private struct DeletedJar {
+        let category: BudgetCategory
+        let transactions: [MoneyTransaction]
+        let wasFood: Bool
+        let wasApartment: Bool
+        let wasBills: Bool
+    }
+    private var lastDeleted: DeletedJar?
+
     func deleteCategory(request: Settings.DeleteCategory.Request) {
+        if let category = worker.category(id: request.id) {
+            let settings = worker.settings()
+            lastDeleted = DeletedJar(
+                category: category,
+                transactions: worker.transactions(categoryId: request.id),
+                wasFood: settings.foodCategoryId == request.id,
+                wasApartment: settings.apartmentCategoryId == request.id,
+                wasBills: settings.billsCategoryId == request.id
+            )
+        }
         worker.deleteCategory(id: request.id)
+        load(request: .init())
+    }
+
+    func undoDeleteCategory() {
+        guard let deleted = lastDeleted else { return }
+        lastDeleted = nil
+        worker.restoreCategory(deleted.category, transactions: deleted.transactions,
+                               wasFood: deleted.wasFood, wasApartment: deleted.wasApartment,
+                               wasBills: deleted.wasBills)
         load(request: .init())
     }
 

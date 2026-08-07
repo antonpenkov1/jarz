@@ -132,6 +132,7 @@ struct CategoryDetailView: View {
                     .swipeActions {
                         Button("Delete", role: .destructive) {
                             store.interactor?.deleteTransaction(request: .init(transactionId: row.id))
+                            showUndoToast = true
                         }
                     }
                 }
@@ -155,8 +156,13 @@ struct CategoryDetailView: View {
         .sheet(isPresented: $store.isSheetPresented) {
             transactionSheet
         }
+        .undoToast(isPresented: $showUndoToast) {
+            store.interactor?.undoDeleteTransaction()
+        }
         .onAppear { store.interactor?.load(request: .init()) }
     }
+
+    @State private var showUndoToast = false
 
     private var transactionSheet: some View {
         NavigationStack {
@@ -199,7 +205,10 @@ struct CategoryDetailView: View {
                         .foregroundStyle(Theme.secondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { store.submitForm() }
+                    Button("Save") {
+                        store.submitForm()
+                        Haptics.success()
+                    }
                         .fontWeight(.semibold)
                         .foregroundStyle(Theme.ink)
                         .disabled(MoneyFormat.parse(store.formAmount) == nil)

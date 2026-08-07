@@ -161,6 +161,7 @@ struct ReconciliationView: View {
 
                     CapsuleButton(title: "Save revision") {
                         store.save()
+                        Haptics.success()
                     }
                     .padding(.top, 32)
 

@@ -4,6 +4,7 @@ protocol CategoryDetailBusinessLogic {
     func load(request: CategoryDetail.Load.Request)
     func saveTransaction(request: CategoryDetail.SaveTransaction.Request)
     func deleteTransaction(request: CategoryDetail.DeleteTransaction.Request)
+    func undoDeleteTransaction()
 }
 
 final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
@@ -15,6 +16,15 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
         self.categoryId = categoryId
         self.presenter = presenter
         self.worker = worker
+    }
+
+    private var lastDeleted: MoneyTransaction?
+
+    func undoDeleteTransaction() {
+        guard let dto = lastDeleted else { return }
+        lastDeleted = nil
+        worker.restoreTransaction(dto)
+        load(request: .init())
     }
 
     func load(request: CategoryDetail.Load.Request) {
@@ -59,6 +69,7 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
     }
 
     func deleteTransaction(request: CategoryDetail.DeleteTransaction.Request) {
+        lastDeleted = worker.transaction(id: request.transactionId)
         worker.deleteTransaction(id: request.transactionId)
         load(request: .init())
     }
