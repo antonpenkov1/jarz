@@ -4,6 +4,8 @@ struct RootView: View {
     @State private var selectedTab = RootView.initialTab
     @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var isLocked = AppLock.isEnabled
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -37,6 +39,16 @@ struct RootView: View {
             set: { if !$0 { hasSeenOnboarding = true } }
         )) {
             OnboardingView { hasSeenOnboarding = true }
+        }
+        .overlay {
+            if isLocked {
+                LockScreenView { isLocked = false }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background && AppLock.isEnabled {
+                isLocked = true
+            }
         }
     }
 

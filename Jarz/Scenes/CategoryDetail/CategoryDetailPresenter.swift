@@ -33,15 +33,32 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
         }
 
         let rows = response.transactions.map { transaction in
-            CategoryDetail.Load.ViewModel.Row(
+            let isOutflow = transaction.kind == .expense || transaction.kind == .transferOut
+            let kindLabel: String
+            switch transaction.kind {
+            case .allocation: kindLabel = String(localized: "Income day")
+            case .transferIn, .transferOut: kindLabel = String(localized: "Transfer")
+            default: kindLabel = ""
+            }
+            return CategoryDetail.Load.ViewModel.Row(
                 id: transaction.id,
                 dateText: Self.dateFormatter.string(from: transaction.date),
                 note: transaction.note,
-                amountText: (transaction.kind == .expense ? "−" : "+")
+                amountText: (isOutflow ? "−" : "+")
                     + MoneyFormat.money(transaction.amount, symbol: symbol),
-                isExpense: transaction.kind == .expense,
-                kindLabel: transaction.kind == .allocation ? String(localized: "Income day") : ""
+                isExpense: isOutflow,
+                kindLabel: kindLabel,
+                isEditable: transaction.kind == .expense || transaction.kind == .topUp
             )
+        }
+
+        var goalLine: String?
+        if let goal = response.category.goalAmount, goal > 0 {
+            let balance = max(0, response.balance)
+            goalLine = "\(MoneyFormat.amount(balance)) / \(MoneyFormat.money(goal, symbol: symbol))"
+            if let date = response.category.goalDate {
+                goalLine! += String(localized: " · by \(FoodDay.dateText(date))")
+            }
         }
 
         let viewModel = CategoryDetail.Load.ViewModel(
@@ -49,6 +66,9 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
             balanceText: MoneyFormat.money(response.balance, symbol: symbol),
             isNegative: response.balance < 0,
             foodLine: foodLine,
+            goalLine: goalLine,
+            goalAmount: response.category.goalAmount,
+            goalDate: response.category.goalDate,
             rows: rows
         )
         view?.displayDetail(viewModel: viewModel)

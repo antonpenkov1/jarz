@@ -4,12 +4,16 @@ struct BudgetCategory: Codable, Identifiable, Hashable {
     var id: UUID = UUID()
     var name: String
     var order: Int
+    var goalAmount: Decimal?
+    var goalDate: Date?
 }
 
 enum TransactionKind: String, Codable, CaseIterable {
     case allocation
     case expense
     case topUp
+    case transferIn
+    case transferOut
 }
 
 struct MoneyTransaction: Codable, Identifiable, Hashable {
@@ -22,7 +26,7 @@ struct MoneyTransaction: Codable, Identifiable, Hashable {
     var date: Date
 
     var signedAmount: Decimal {
-        kind == .expense ? -amount : amount
+        kind == .expense || kind == .transferOut ? -amount : amount
     }
 }
 

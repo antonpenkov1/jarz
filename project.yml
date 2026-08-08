@@ -22,14 +22,15 @@ targets:
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         CODE_SIGN_ENTITLEMENTS: Jarz/Jarz.entitlements
         INFOPLIST_KEY_UIBackgroundModes: remote-notification
+        INFOPLIST_KEY_NSFaceIDUsageDescription: Jarz locks your budget behind Face ID.
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_CFBundleDisplayName: Jarz
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.1
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.2
   JarzWidget:
     type: app-extension
     platform: iOS
@@ -55,6 +56,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: JarzWidget/JarzWidget.entitlements
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.9"
-        CURRENT_PROJECT_VERSION: 3
-        MARKETING_VERSION: 1.1
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.2
         SKIP_INSTALL: YES

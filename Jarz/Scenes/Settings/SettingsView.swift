@@ -90,7 +90,13 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            decoratedList
+        }
+        .tint(Theme.ink)
+    }
+
+    private var settingsList: some View {
+        List {
                 Section {
                     EmptyView()
                 } header: {
@@ -137,72 +143,10 @@ struct SettingsView: View {
                     appIconRow
                 }
 
-                section("Sync & backup") {
-                    HStack {
-                        Text("iCloud sync")
-                            .font(.system(size: 16))
-                            .foregroundStyle(Theme.ink)
-                        Spacer()
-                        (StorageWorker.shared.iCloudSyncActive() ? Text("On") : Text("Off"))
-                            .font(.system(size: 16))
-                            .foregroundStyle(StorageWorker.shared.iCloudSyncActive()
-                                             ? Theme.accent : Theme.secondary)
-                    }
-                    Text("Managed by iOS: Settings → your name → iCloud → Saved to iCloud → Jarz.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.secondary)
-
-                    Button {
-                        exportData()
-                    } label: {
-                        HStack {
-                            Text("Export data")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Theme.ink)
-                            Spacer()
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Theme.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        showImportPicker = true
-                    } label: {
-                        HStack {
-                            Text("Import data")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Theme.ink)
-                            Spacer()
-                            Image(systemName: "square.and.arrow.down")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Theme.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                section("About") {
-                    Button {
-                        showOnboarding = true
-                    } label: {
-                        HStack {
-                            Text("How Jarz works")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Theme.ink)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Theme.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                }
+                section("Reminders") { remindersRows }
+                section("Privacy") { privacyRows }
+                section("Sync & backup") { syncRows }
+                section("About") { aboutRows }
 
                 Section {
                     jarsRows
@@ -224,6 +168,10 @@ struct SettingsView: View {
                     .padding(.top, 8)
                 }
             }
+    }
+
+    private var behavioralList: some View {
+        settingsList
             .listStyle(.plain)
             .scrollDismissesKeyboard(.interactively)
             .scrollContentBackground(.hidden)
@@ -239,6 +187,21 @@ struct SettingsView: View {
             .onChange(of: store.foodCategoryId) { store.persistSettings() }
             .onChange(of: store.apartmentCategoryId) { store.persistSettings() }
             .onChange(of: store.billsCategoryId) { store.persistSettings() }
+            .onChange(of: remindMorning) { _, on in reminderToggleChanged(enabled: on) }
+            .onChange(of: remindEvening) { _, on in reminderToggleChanged(enabled: on) }
+            .onChange(of: remindRevision) { _, on in reminderToggleChanged(enabled: on) }
+            .onChange(of: appLockEnabled) { _, on in
+                // Confirm the user can actually pass the lock before enabling it.
+                if on {
+                    AppLock.authenticate { success in
+                        if !success { appLockEnabled = false }
+                    }
+                }
+            }
+    }
+
+    private var decoratedList: some View {
+        behavioralList
             .alert(
                 "Delete jar?",
                 isPresented: Binding(
@@ -298,9 +261,12 @@ struct SettingsView: View {
                     Text("The file doesn't look like a Jarz backup.")
                 }
             }
-        }
-        .tint(Theme.ink)
     }
+
+    @AppStorage(Reminders.morningKey) private var remindMorning = false
+    @AppStorage(Reminders.eveningKey) private var remindEvening = false
+    @AppStorage(Reminders.revisionKey) private var remindRevision = false
+    @AppStorage(AppLock.storageKey) private var appLockEnabled = false
 
     @State private var showImportPicker = false
     @State private var pendingImportData: Data?
@@ -353,6 +319,93 @@ struct SettingsView: View {
     }
 
     @State private var selectedIcon = UIApplication.shared.alternateIconName ?? ""
+
+    @ViewBuilder
+    private var remindersRows: some View {
+        Toggle(isOn: $remindMorning) {
+            Text("Morning food budget (9:00)")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+        }
+        .tint(Theme.accent)
+        Toggle(isOn: $remindEvening) {
+            Text("Evening carry-over (21:00)")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+        }
+        .tint(Theme.accent)
+        Toggle(isOn: $remindRevision) {
+            Text("Revision every two weeks")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+        }
+        .tint(Theme.accent)
+    }
+
+    private var privacyRows: some View {
+        Toggle(isOn: $appLockEnabled) {
+            Text("Lock with Face ID")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+        }
+        .tint(Theme.accent)
+    }
+
+    @ViewBuilder
+    private var syncRows: some View {
+        HStack {
+            Text("iCloud sync")
+                .font(.system(size: 16))
+                .foregroundStyle(Theme.ink)
+            Spacer()
+            (StorageWorker.shared.iCloudSyncActive() ? Text("On") : Text("Off"))
+                .font(.system(size: 16))
+                .foregroundStyle(StorageWorker.shared.iCloudSyncActive()
+                                 ? Theme.accent : Theme.secondary)
+        }
+        Text("Managed by iOS: Settings → your name → iCloud → Saved to iCloud → Jarz.")
+            .font(.system(size: 12))
+            .foregroundStyle(Theme.secondary)
+
+        settingsButton("Export data", icon: "square.and.arrow.up") { exportData() }
+        settingsButton("Import data", icon: "square.and.arrow.down") { showImportPicker = true }
+    }
+
+    private var aboutRows: some View {
+        settingsButton("How Jarz works", icon: "chevron.right") { showOnboarding = true }
+    }
+
+    private func settingsButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(LocalizedStringKey(title))
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Theme.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func reminderToggleChanged(enabled: Bool) {
+        if enabled {
+            Reminders.requestAuthorization { granted in
+                if granted {
+                    Reminders.reschedule(worker: .shared)
+                } else {
+                    remindMorning = false
+                    remindEvening = false
+                    remindRevision = false
+                }
+            }
+        } else {
+            Reminders.reschedule(worker: .shared)
+        }
+    }
 
     private func exportData() {
         guard let data = StorageWorker.shared.exportJSON() else { return }

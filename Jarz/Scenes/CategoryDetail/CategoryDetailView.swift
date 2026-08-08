@@ -82,6 +82,12 @@ struct CategoryDetailView: View {
                             .foregroundStyle(store.viewModel.isNegative ? Theme.negative : Theme.accent)
                             .padding(.top, 6)
                     }
+                    if let goalLine = store.viewModel.goalLine {
+                        Text(goalLine)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Theme.accent)
+                            .padding(.top, 6)
+                    }
                     SectionLabel("History")
                         .padding(.top, 36)
                 }
@@ -100,7 +106,7 @@ struct CategoryDetailView: View {
                 }
                 ForEach(store.viewModel.rows) { row in
                     Button {
-                        store.presentEditSheet(rowId: row.id)
+                        if row.isEditable { store.presentEditSheet(rowId: row.id) }
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 3) {
@@ -152,6 +158,21 @@ struct CategoryDetailView: View {
                         .foregroundStyle(Theme.ink)
                 }
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    goalAmountText = store.viewModel.goalAmount.map {
+                        MoneyFormat.amount($0).replacingOccurrences(of: " ", with: "")
+                    } ?? ""
+                    goalHasDate = store.viewModel.goalDate != nil
+                    goalDate = store.viewModel.goalDate
+                        ?? Calendar.current.date(byAdding: .month, value: 6, to: Date())!
+                    showGoalSheet = true
+                } label: {
+                    Image(systemName: "scope")
+                        .fontWeight(.medium)
+                        .foregroundStyle(Theme.ink)
+                }
+            }
         }
         .sheet(isPresented: $store.isSheetPresented) {
             transactionSheet
@@ -159,10 +180,81 @@ struct CategoryDetailView: View {
         .undoToast(isPresented: $showUndoToast) {
             store.interactor?.undoDeleteTransaction()
         }
+        .sheet(isPresented: $showGoalSheet) { goalSheet }
         .onAppear { store.interactor?.load(request: .init()) }
     }
 
     @State private var showUndoToast = false
+    @State private var showGoalSheet = false
+    @State private var goalAmountText = ""
+    @State private var goalHasDate = false
+    @State private var goalDate = Date()
+
+    private var goalSheet: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                VStack(spacing: 10) {
+                    TextField("0", text: $goalAmountText)
+                        .font(Theme.serif(52, .regular))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Theme.ink)
+                    Hairline()
+                }
+
+                Toggle(isOn: $goalHasDate) {
+                    Text("Target date")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Theme.ink)
+                }
+                .tint(Theme.accent)
+
+                if goalHasDate {
+                    DatePicker("", selection: $goalDate, in: Date()..., displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                }
+
+                if store.viewModel.goalAmount != nil {
+                    Button {
+                        store.interactor?.setGoal(request: .init(amount: nil, date: nil))
+                        showGoalSheet = false
+                    } label: {
+                        Text("Remove goal")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Theme.negative)
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(28)
+            .background(Theme.bg.ignoresSafeArea())
+            .navigationTitle("Goal")
+            .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showGoalSheet = false }
+                        .foregroundStyle(Theme.secondary)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if let amount = MoneyFormat.parse(goalAmountText), amount > 0 {
+                            store.interactor?.setGoal(request: .init(
+                                amount: amount, date: goalHasDate ? goalDate : nil))
+                            Haptics.success()
+                        }
+                        showGoalSheet = false
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Theme.ink)
+                    .disabled((MoneyFormat.parse(goalAmountText) ?? 0) <= 0)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
 
     private var transactionSheet: some View {
         NavigationStack {
