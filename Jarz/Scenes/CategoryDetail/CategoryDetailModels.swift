@@ -24,17 +24,26 @@ enum CategoryDetail {
                 let kindLabel: String
                 let isEditable: Bool
             }
+            struct DayCell: Identifiable {
+                let id: Int
+                let weekday: String
+                let amountText: String
+                let isMuted: Bool
+                let isToday: Bool
+            }
             let title: String
             let balanceText: String
             let isNegative: Bool
             let foodLine: String?
+            /// The next week of the food plan; empty for non-food jars.
+            let days: [DayCell]
             let goalLine: String?
             let goalAmount: Decimal?
             let goalDate: Date?
             let rows: [Row]
 
             static let empty = ViewModel(
-                title: "", balanceText: "", isNegative: false, foodLine: nil,
+                title: "", balanceText: "", isNegative: false, foodLine: nil, days: [],
                 goalLine: nil, goalAmount: nil, goalDate: nil, rows: []
             )
         }
@@ -61,6 +70,13 @@ enum CategoryDetail {
             /// nil clears the goal.
             let amount: Decimal?
             let date: Date?
+        }
+    }
+
+    enum Transfer {
+        struct Request {
+            let toId: UUID
+            let amount: Decimal
         }
     }
 }

@@ -151,6 +151,38 @@ enum FoodMath {
                         isAhead: true, daysLeft: remainingAfterToday - ahead, planEnd: end)
     }
 
+    struct PlanDay {
+        let date: Date
+        let amount: Decimal
+        /// Already consumed by overspending.
+        let isEaten: Bool
+        let isToday: Bool
+    }
+
+    /// The next week of the plan, day by day (at most 7 days, capped at planEnd).
+    static func weekAhead(plan: FoodPlan, daily: Decimal, now: Date = Date()) -> [PlanDay] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        let aheadDays = calendar.dateComponents(
+            [.day], from: today, to: calendar.startOfDay(for: plan.dayDate)).day ?? 0
+        var days: [PlanDay] = []
+        for offset in 0..<7 {
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today),
+                  date <= plan.planEnd else { break }
+            let amount: Decimal
+            if offset < aheadDays {
+                amount = 0
+            } else if offset == aheadDays {
+                amount = max(0, plan.available)
+            } else {
+                amount = daily
+            }
+            days.append(PlanDay(date: date, amount: amount,
+                                isEaten: offset < aheadDays, isToday: offset == 0))
+        }
+        return days
+    }
+
     /// Fixes the plan horizon from the balance at income time:
     /// today plus one day per full daily budget in the balance.
     static func planEnd(balance: Decimal, daily: Decimal, now: Date = Date()) -> Date? {

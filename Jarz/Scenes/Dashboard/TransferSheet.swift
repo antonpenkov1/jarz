@@ -9,6 +9,8 @@ struct TransferSheet: View {
     }
 
     let jars: [JarOption]
+    /// When set, the source jar is fixed (transfer opened from a category screen).
+    var fixedFrom: JarOption?
     let onSave: (UUID, UUID, Decimal) -> Void
     let onCancel: () -> Void
 
@@ -29,7 +31,13 @@ struct TransferSheet: View {
                 HStack {
                     SectionLabel("From")
                     Spacer()
-                    jarPicker(selection: $fromId)
+                    if let fixedFrom {
+                        Text(fixedFrom.name)
+                            .font(.system(size: 16))
+                            .foregroundStyle(Theme.ink)
+                    } else {
+                        jarPicker(selection: $fromId)
+                    }
                 }
                 Hairline()
                 HStack {
@@ -80,8 +88,13 @@ struct TransferSheet: View {
                 }
             }
             .onAppear {
-                if fromId == nil { fromId = jars.first?.id }
-                if toId == nil { toId = jars.dropFirst().first?.id }
+                if let fixedFrom {
+                    fromId = fixedFrom.id
+                    if toId == nil { toId = jars.first(where: { $0.id != fixedFrom.id })?.id }
+                } else {
+                    if fromId == nil { fromId = jars.first?.id }
+                    if toId == nil { toId = jars.dropFirst().first?.id }
+                }
             }
         }
         .presentationDetents([.medium])

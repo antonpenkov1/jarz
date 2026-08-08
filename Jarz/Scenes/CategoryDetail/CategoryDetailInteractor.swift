@@ -6,6 +6,7 @@ protocol CategoryDetailBusinessLogic {
     func deleteTransaction(request: CategoryDetail.DeleteTransaction.Request)
     func undoDeleteTransaction()
     func setGoal(request: CategoryDetail.SetGoal.Request)
+    func transfer(request: CategoryDetail.Transfer.Request)
 }
 
 final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
@@ -21,6 +22,11 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
 
     func setGoal(request: CategoryDetail.SetGoal.Request) {
         worker.setGoal(categoryId: categoryId, amount: request.amount, date: request.date)
+        load(request: .init())
+    }
+
+    func transfer(request: CategoryDetail.Transfer.Request) {
+        worker.transfer(from: categoryId, to: request.toId, amount: request.amount)
         load(request: .init())
     }
 

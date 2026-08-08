@@ -35,14 +35,6 @@ enum Dashboard {
 
         struct ViewModel {
             struct FoodCard {
-                struct DayCell: Identifiable {
-                    let id: Int
-                    let weekday: String
-                    let amountText: String
-                    /// Day already eaten by overspending.
-                    let isMuted: Bool
-                    let isToday: Bool
-                }
                 let name: String
                 let balanceText: String
                 /// Big serif numeral: what's left for the current day.
@@ -55,8 +47,6 @@ enum Dashboard {
                 let daysText: String
                 let isNegative: Bool
                 let dayProgress: Double
-                /// The next week of the plan, day by day.
-                let days: [DayCell]
             }
             struct Row: Identifiable {
                 let id: UUID

@@ -28,6 +28,7 @@ struct DashboardView: View {
     @State private var quickExpenseTarget: QuickExpenseTarget?
     @State private var showTransferSheet = false
     @State private var showRecap = false
+    @State private var showFoodDetail = false
 
     private var transferOptions: [TransferSheet.JarOption] {
         var options: [TransferSheet.JarOption] = []
@@ -136,6 +137,9 @@ struct DashboardView: View {
             .navigationDestination(isPresented: $showRecap) {
                 RecapConfigurator.makeView()
             }
+            .navigationDestination(isPresented: $showFoodDetail) {
+                CategoryDetailConfigurator.makeView(categoryId: foodCategoryId)
+            }
             .sheet(isPresented: $showTransferSheet) {
                 TransferSheet(
                     jars: transferOptions,
@@ -164,6 +168,10 @@ struct DashboardView: View {
                 // scenario through the real storage path.
                 if let scenario = UserDefaults.standard.string(forKey: "DemoFood") {
                     seedFoodScenario(scenario)
+                }
+                // Screenshot hook: `-OpenFood 1` pushes the food category screen.
+                if UserDefaults.standard.bool(forKey: "OpenFood") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showFoodDetail = true }
                 }
                 // Screenshot hook: `-OpenRecap 1` pushes the period recap.
                 if UserDefaults.standard.bool(forKey: "OpenRecap") {
@@ -271,28 +279,6 @@ struct DashboardView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.accent)
                     .padding(.top, 12)
-
-                if food.days.count > 1 {
-                    HStack(spacing: 0) {
-                        ForEach(food.days) { day in
-                            VStack(spacing: 4) {
-                                Text(day.weekday)
-                                    .font(.system(size: 9, weight: .semibold))
-                                    .tracking(0.8)
-                                    .foregroundStyle(day.isToday ? Theme.ink : Theme.secondary)
-                                Text(day.amountText)
-                                    .font(Theme.serif(13))
-                                    .foregroundStyle(day.isMuted ? Theme.hairline
-                                                     : (day.isToday ? Theme.ink : Theme.secondary))
-                                    .strikethrough(day.isMuted, color: Theme.hairline)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
-                    .padding(.top, 16)
-                }
             }
         }
         .contentShape(Rectangle())
