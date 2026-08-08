@@ -93,6 +93,8 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 
 ВАЖНО: включена поддержка iPad → в ASC потребуется набор iPad-скриншотов (13", 2064×2752). Виджет получил кнопки — интенты пишут в общий store из процесса виджета (CloudKit в extension отключён, `StorageWorker.isExtension`).
 
+Mac: приложение доступно на Apple Silicon Mac как «Designed for iPad» (сборка под `variant=Designed for iPad` проверена). Включается галочкой в ASC: Pricing and Availability → «iPhone and iPad Apps on Apple Silicon Macs» → Make this app available on Mac. Отдельный билд не нужен.
+
 ### What's New — вставить в ASC как есть
 
 ```
@@ -102,7 +104,7 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 • Period archive: past paydays with totals and a spending chart.
 • Search your history, now grouped by month.
 • Export your transactions as CSV.
-• Jarz now runs on iPad.
+• Jarz now runs on iPad — and on Apple Silicon Macs.
 ```
 
 ## Assets
