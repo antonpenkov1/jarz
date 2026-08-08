@@ -14,9 +14,11 @@ SANS = "/System/Library/Fonts/SFNS.ttf"
 
 SHOTS = [
     ("tab0", "Plan forward,\nnot backward.", "home"),
+    ("food", "Food lives\nday by day.", "food"),
+    ("recap", "Plan vs reality,\nevery payday.", "recap"),
+    ("transfer", "Move money\nin one step.", "transfer"),
     ("tab1", "Split every paycheck\ninto jars.", "income"),
     ("tab2", "Reality check,\none tap away.", "revision"),
-    ("tab3", "Your rules.\nYour jars.", "settings"),
 ]
 
 def tracked_text(draw, pos, text, font, fill, tracking):

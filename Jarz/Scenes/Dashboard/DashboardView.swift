@@ -169,6 +169,10 @@ struct DashboardView: View {
                 if let scenario = UserDefaults.standard.string(forKey: "DemoFood") {
                     seedFoodScenario(scenario)
                 }
+                // Screenshot hook: `-OpenTransfer 1` opens the transfer sheet.
+                if UserDefaults.standard.bool(forKey: "OpenTransfer") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { showTransferSheet = true }
+                }
                 // Screenshot hook: `-OpenFood 1` pushes the food category screen.
                 if UserDefaults.standard.bool(forKey: "OpenFood") {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showFoodDetail = true }
@@ -240,6 +244,14 @@ struct DashboardView: View {
                 }
                 worker.addTransaction(categoryId: category.id, kind: .allocation,
                                       amount: amount, note: "Income", date: yesterday)
+                if category.name == "Savings" {
+                    worker.setGoal(categoryId: category.id, amount: 60000,
+                                   date: calendar.date(byAdding: .month, value: 4, to: today))
+                }
+                if category.name == "Trips" {
+                    worker.setGoal(categoryId: category.id, amount: 100000,
+                                   date: calendar.date(byAdding: .month, value: 10, to: today))
+                }
             }
         default:
             break
