@@ -9,6 +9,14 @@ enum Dashboard {
         }
     }
 
+    enum Transfer {
+        struct Request {
+            let fromId: UUID
+            let toId: UUID
+            let amount: Decimal
+        }
+    }
+
     enum Load {
         struct Request {}
 
@@ -27,6 +35,14 @@ enum Dashboard {
 
         struct ViewModel {
             struct FoodCard {
+                struct DayCell: Identifiable {
+                    let id: Int
+                    let weekday: String
+                    let amountText: String
+                    /// Day already eaten by overspending.
+                    let isMuted: Bool
+                    let isToday: Bool
+                }
                 let name: String
                 let balanceText: String
                 /// Big serif numeral: what's left for the current day.
@@ -39,12 +55,17 @@ enum Dashboard {
                 let daysText: String
                 let isNegative: Bool
                 let dayProgress: Double
+                /// The next week of the plan, day by day.
+                let days: [DayCell]
             }
             struct Row: Identifiable {
                 let id: UUID
                 let name: String
                 let balanceText: String
                 let isNegative: Bool
+                /// 0…1 progress toward the jar's goal, when one is set.
+                let goalProgress: Double?
+                let goalText: String?
             }
             let foodCard: FoodCard?
             let rows: [Row]

@@ -74,6 +74,21 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 • Pick your app icon, undo accidental deletes, and feel a gentle tap on every save.
 ```
 
+## 1.2 (2026-08-08)
+
+ВАЖНО: содержит миграцию SwiftData-хранилища в app group (с 1.1 store молча переехал в group-контейнер из-за entitlement — пользователи 1.0.x при обновлении на 1.1 видели пустые данные; 1.2 переносит старый store при первом запуске). Если 1.1 уже в продакшене — выпускать 1.2 как можно быстрее.
+
+### What's New — вставить в ASC как есть
+
+```
+• Transfer money between jars in one step.
+• Jar goals: set a target amount and date, watch the progress line fill up.
+• The food card now shows the week ahead, day by day.
+• Period recap: plan vs reality for every jar since your last payday.
+• Optional reminders: morning food budget, evening carry-over, revision nudge.
+• Lock Jarz with Face ID.
+```
+
 ## Assets
 
 - App icon source: `IconDrafts/variant-b-night-jar.svg` (правки → перерендер: `rsvg-convert -w 1024 -h 1024 in.svg -o out.png`, затем убрать альфа-канал через sips как в AppIcon.png).

@@ -26,6 +26,17 @@ enum DashboardConfigurator {
 struct DashboardView: View {
     @StateObject private var store: DashboardViewStore
     @State private var quickExpenseTarget: QuickExpenseTarget?
+    @State private var showTransferSheet = false
+    @State private var showRecap = false
+
+    private var transferOptions: [TransferSheet.JarOption] {
+        var options: [TransferSheet.JarOption] = []
+        if let food = store.viewModel.foodCard {
+            options.append(.init(id: foodCategoryId, name: food.name))
+        }
+        options.append(contentsOf: store.viewModel.rows.map { .init(id: $0.id, name: $0.name) })
+        return options
+    }
 
     init(store: DashboardViewStore) {
         _store = StateObject(wrappedValue: store)
@@ -48,19 +59,39 @@ struct DashboardView: View {
                         })
                     }
 
-                    SectionLabel("Jars")
-                        .padding(.top, 44)
-                        .padding(.bottom, 4)
+                    HStack {
+                        SectionLabel("Jars")
+                        Spacer()
+                        Button {
+                            showTransferSheet = true
+                        } label: {
+                            Text("Transfer")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
+                    .padding(.top, 44)
+                    .padding(.bottom, 4)
 
                     ForEach(store.viewModel.rows) { row in
                         NavigationLink(value: row.id) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(row.name)
-                                    .font(.system(size: 17))
-                                    .foregroundStyle(Theme.ink)
-                                Spacer()
-                                AmountText(text: row.balanceText,
-                                           color: row.isNegative ? Theme.negative : Theme.ink)
+                            VStack(alignment: .leading, spacing: 0) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(row.name)
+                                        .font(.system(size: 17))
+                                        .foregroundStyle(Theme.ink)
+                                    Spacer()
+                                    AmountText(text: row.balanceText,
+                                               color: row.isNegative ? Theme.negative : Theme.ink)
+                                }
+                                if let progress = row.goalProgress, let goalText = row.goalText {
+                                    ProgressLine(progress: progress)
+                                        .padding(.top, 10)
+                                    Text(goalText)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(Theme.secondary)
+                                        .padding(.top, 6)
+                                }
                             }
                             .padding(.vertical, 17)
                             .contentShape(Rectangle())
@@ -78,6 +109,21 @@ struct DashboardView: View {
                         AmountText(text: store.viewModel.totalText, size: 20)
                     }
                     .padding(.top, 28)
+
+                    Button {
+                        showRecap = true
+                    } label: {
+                        HStack {
+                            Text("Period recap")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(Theme.accent)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 20)
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 40)
@@ -86,6 +132,20 @@ struct DashboardView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: UUID.self) { categoryId in
                 CategoryDetailConfigurator.makeView(categoryId: categoryId)
+            }
+            .navigationDestination(isPresented: $showRecap) {
+                RecapConfigurator.makeView()
+            }
+            .sheet(isPresented: $showTransferSheet) {
+                TransferSheet(
+                    jars: transferOptions,
+                    onSave: { fromId, toId, amount in
+                        store.interactor?.transfer(request: .init(
+                            fromId: fromId, toId: toId, amount: amount))
+                        showTransferSheet = false
+                    },
+                    onCancel: { showTransferSheet = false }
+                )
             }
             .sheet(item: $quickExpenseTarget) { target in
                 QuickExpenseSheet(
@@ -104,6 +164,10 @@ struct DashboardView: View {
                 // scenario through the real storage path.
                 if let scenario = UserDefaults.standard.string(forKey: "DemoFood") {
                     seedFoodScenario(scenario)
+                }
+                // Screenshot hook: `-OpenRecap 1` pushes the period recap.
+                if UserDefaults.standard.bool(forKey: "OpenRecap") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showRecap = true }
                 }
                 // Screenshot hook: `-QuickExpense 1` opens the quick sheet for food.
                 if UserDefaults.standard.bool(forKey: "QuickExpense") {
@@ -207,6 +271,28 @@ struct DashboardView: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Theme.accent)
                     .padding(.top, 12)
+
+                if food.days.count > 1 {
+                    HStack(spacing: 0) {
+                        ForEach(food.days) { day in
+                            VStack(spacing: 4) {
+                                Text(day.weekday)
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .tracking(0.8)
+                                    .foregroundStyle(day.isToday ? Theme.ink : Theme.secondary)
+                                Text(day.amountText)
+                                    .font(Theme.serif(13))
+                                    .foregroundStyle(day.isMuted ? Theme.hairline
+                                                     : (day.isToday ? Theme.ink : Theme.secondary))
+                                    .strikethrough(day.isMuted, color: Theme.hairline)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.top, 16)
+                }
             }
         }
         .contentShape(Rectangle())

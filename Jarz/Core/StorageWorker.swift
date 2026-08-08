@@ -13,11 +13,16 @@ final class JarCategory {
     var id: UUID = UUID()
     var name: String = ""
     var order: Int = 0
+    var goalAmount: Decimal?
+    var goalDate: Date?
 
-    init(id: UUID = UUID(), name: String, order: Int) {
+    init(id: UUID = UUID(), name: String, order: Int,
+         goalAmount: Decimal? = nil, goalDate: Date? = nil) {
         self.id = id
         self.name = name
         self.order = order
+        self.goalAmount = goalAmount
+        self.goalDate = goalDate
     }
 }
 
@@ -110,6 +115,10 @@ final class StorageWorker {
     private let context: ModelContext
 
     private init() {
+        // With the app-group entitlement SwiftData silently moved its default
+        // store into the group container; carry the pre-group store over so
+        // 1.0.x users keep their data after updating.
+        Self.migrateStoreToAppGroupIfNeeded()
         let schema = Schema([JarCategory.self, JarTransaction.self, JarSettings.self,
                              JarAccount.self, JarRevision.self])
         do {
@@ -143,11 +152,11 @@ final class StorageWorker {
     func sortedCategories() -> [BudgetCategory] {
         let fetch = FetchDescriptor<JarCategory>(sortBy: [SortDescriptor(\.order)])
         return ((try? context.fetch(fetch)) ?? [])
-            .map { BudgetCategory(id: $0.id, name: $0.name, order: $0.order) }
+            .map { BudgetCategory(id: $0.id, name: $0.name, order: $0.order, goalAmount: $0.goalAmount, goalDate: $0.goalDate) }
     }
 
     func category(id: UUID) -> BudgetCategory? {
-        categoryModel(id: id).map { BudgetCategory(id: $0.id, name: $0.name, order: $0.order) }
+        categoryModel(id: id).map { BudgetCategory(id: $0.id, name: $0.name, order: $0.order, goalAmount: $0.goalAmount, goalDate: $0.goalDate) }
     }
 
     func settings() -> AppSettings {
@@ -187,7 +196,9 @@ final class StorageWorker {
         let all = (try? context.fetch(FetchDescriptor<JarTransaction>())) ?? []
         return all
             .filter { ids.contains($0.categoryId) }
-            .reduce(Decimal.zero) { $0 + ($1.kind == .expense ? -$1.amount : $1.amount) }
+            .reduce(Decimal.zero) {
+                $0 + ($1.kind == .expense || $1.kind == .transferOut ? -$1.amount : $1.amount)
+            }
     }
 
     func spentToday(categoryId: UUID) -> Decimal {
@@ -224,6 +235,28 @@ final class StorageWorker {
         save()
     }
 
+    func setGoal(categoryId: UUID, amount: Decimal?, date: Date?) {
+        guard let model = categoryModel(id: categoryId) else { return }
+        model.goalAmount = amount
+        model.goalDate = amount == nil ? nil : date
+        save()
+    }
+
+    /// Moves money between jars as a linked pair of transactions.
+    func transfer(from sourceId: UUID, to targetId: UUID, amount: Decimal) {
+        guard sourceId != targetId, amount > 0 else { return }
+        let date = Date()
+        let sourceName = category(id: sourceId)?.name ?? ""
+        let targetName = category(id: targetId)?.name ?? ""
+        context.insert(JarTransaction(
+            categoryId: sourceId, kind: .transferOut, amount: amount,
+            note: String(localized: "Transfer to \(targetName)"), date: date))
+        context.insert(JarTransaction(
+            categoryId: targetId, kind: .transferIn, amount: amount,
+            note: String(localized: "Transfer from \(sourceName)"), date: date))
+        save()
+    }
+
     /// Re-inserts a deleted transaction with its original id (undo).
     func restoreTransaction(_ dto: MoneyTransaction) {
         context.insert(JarTransaction(id: dto.id, categoryId: dto.categoryId, kind: dto.kind,
@@ -234,7 +267,8 @@ final class StorageWorker {
     /// Re-inserts a deleted category with its history and settings links (undo).
     func restoreCategory(_ dto: BudgetCategory, transactions: [MoneyTransaction],
                          wasFood: Bool, wasApartment: Bool, wasBills: Bool) {
-        context.insert(JarCategory(id: dto.id, name: dto.name, order: dto.order))
+        context.insert(JarCategory(id: dto.id, name: dto.name, order: dto.order,
+                                   goalAmount: dto.goalAmount, goalDate: dto.goalDate))
         for transaction in transactions {
             context.insert(JarTransaction(
                 id: transaction.id, categoryId: transaction.categoryId, kind: transaction.kind,
@@ -378,7 +412,8 @@ final class StorageWorker {
         for model in (try? context.fetch(FetchDescriptor<JarSettings>())) ?? [] { context.delete(model) }
 
         for category in payload.categories {
-            context.insert(JarCategory(id: category.id, name: category.name, order: category.order))
+            context.insert(JarCategory(id: category.id, name: category.name, order: category.order,
+                                       goalAmount: category.goalAmount, goalDate: category.goalDate))
         }
         for transaction in payload.transactions {
             context.insert(JarTransaction(
@@ -412,10 +447,34 @@ final class StorageWorker {
 
     // MARK: Internals
 
+    private static func migrateStoreToAppGroupIfNeeded() {
+        let fm = FileManager.default
+        guard let groupDir = fm.containerURL(
+            forSecurityApplicationGroupIdentifier: WidgetShared.groupId)?
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+        else { return }
+        let oldDir = URL.applicationSupportDirectory
+        let oldStore = oldDir.appendingPathComponent("default.store")
+        let newStore = groupDir.appendingPathComponent("default.store")
+        // Only when the group store doesn't exist yet — never overwrite data
+        // the user may have created after updating.
+        guard fm.fileExists(atPath: oldStore.path),
+              !fm.fileExists(atPath: newStore.path) else { return }
+        try? fm.createDirectory(at: groupDir, withIntermediateDirectories: true)
+        for name in ["default.store", "default.store-shm", "default.store-wal"] {
+            let source = oldDir.appendingPathComponent(name)
+            guard fm.fileExists(atPath: source.path) else { continue }
+            try? fm.copyItem(at: source, to: groupDir.appendingPathComponent(name))
+        }
+        // Rename instead of deleting — the old files stay as a safety net.
+        try? fm.moveItem(at: oldStore, to: oldDir.appendingPathComponent("default.store.pre-group"))
+    }
+
     private func save() {
         try? context.save()
         NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
         publishWidgetSnapshot()
+        Reminders.reschedule(worker: self)
     }
 
     /// Mirrors the food state into the app group so the widget can render

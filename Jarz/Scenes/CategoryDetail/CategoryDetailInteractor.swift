@@ -5,6 +5,7 @@ protocol CategoryDetailBusinessLogic {
     func saveTransaction(request: CategoryDetail.SaveTransaction.Request)
     func deleteTransaction(request: CategoryDetail.DeleteTransaction.Request)
     func undoDeleteTransaction()
+    func setGoal(request: CategoryDetail.SetGoal.Request)
 }
 
 final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
@@ -16,6 +17,11 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
         self.categoryId = categoryId
         self.presenter = presenter
         self.worker = worker
+    }
+
+    func setGoal(request: CategoryDetail.SetGoal.Request) {
+        worker.setGoal(categoryId: categoryId, amount: request.amount, date: request.date)
+        load(request: .init())
     }
 
     private var lastDeleted: MoneyTransaction?

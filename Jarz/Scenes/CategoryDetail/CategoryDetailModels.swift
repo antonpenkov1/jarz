@@ -22,15 +22,20 @@ enum CategoryDetail {
                 let amountText: String
                 let isExpense: Bool
                 let kindLabel: String
+                let isEditable: Bool
             }
             let title: String
             let balanceText: String
             let isNegative: Bool
             let foodLine: String?
+            let goalLine: String?
+            let goalAmount: Decimal?
+            let goalDate: Date?
             let rows: [Row]
 
             static let empty = ViewModel(
-                title: "", balanceText: "", isNegative: false, foodLine: nil, rows: []
+                title: "", balanceText: "", isNegative: false, foodLine: nil,
+                goalLine: nil, goalAmount: nil, goalDate: nil, rows: []
             )
         }
     }
@@ -48,6 +53,14 @@ enum CategoryDetail {
     enum DeleteTransaction {
         struct Request {
             let transactionId: UUID
+        }
+    }
+
+    enum SetGoal {
+        struct Request {
+            /// nil clears the goal.
+            let amount: Decimal?
+            let date: Date?
         }
     }
 }
