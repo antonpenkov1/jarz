@@ -18,6 +18,7 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
         let symbol = response.currencySymbol
 
         var foodLine: String?
+        var days: [CategoryDetail.Load.ViewModel.DayCell] = []
         if response.isFoodCategory,
            let plan = FoodMath.plan(balance: response.balance, daily: response.dailyFoodAmount,
                                     planEnd: response.foodPlanEnd) {
@@ -29,6 +30,18 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
                     + (plan.daysLeft > 0
                         ? String(localized: " · +\(plan.daysLeft) days until \(FoodDay.dateText(plan.planEnd))")
                         : String(localized: " · until \(FoodDay.dateText(plan.planEnd))"))
+
+                let weekdayFormatter = DateFormatter()
+                weekdayFormatter.dateFormat = "EE"
+                days = FoodMath.weekAhead(plan: plan, daily: response.dailyFoodAmount)
+                    .enumerated().map { index, day in
+                        .init(id: index,
+                              weekday: weekdayFormatter.string(from: day.date).uppercased(),
+                              amountText: MoneyFormat.amount(day.amount),
+                              isMuted: day.isEaten,
+                              isToday: day.isToday)
+                    }
+                if days.count < 2 { days = [] }
             }
         }
 
@@ -66,6 +79,7 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
             balanceText: MoneyFormat.money(response.balance, symbol: symbol),
             isNegative: response.balance < 0,
             foodLine: foodLine,
+            days: days,
             goalLine: goalLine,
             goalAmount: response.category.goalAmount,
             goalDate: response.category.goalDate,

@@ -53,15 +53,17 @@ enum CategoryDetailConfigurator {
         let presenter = CategoryDetailPresenter()
         presenter.view = store
         store.interactor = CategoryDetailInteractor(categoryId: categoryId, presenter: presenter)
-        return CategoryDetailView(store: store)
+        return CategoryDetailView(store: store, categoryId: categoryId)
     }
 }
 
 struct CategoryDetailView: View {
     @StateObject private var store: CategoryDetailViewStore
+    let categoryId: UUID
 
-    init(store: CategoryDetailViewStore) {
+    init(store: CategoryDetailViewStore, categoryId: UUID) {
         _store = StateObject(wrappedValue: store)
+        self.categoryId = categoryId
     }
 
     var body: some View {
@@ -87,6 +89,27 @@ struct CategoryDetailView: View {
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(Theme.accent)
                             .padding(.top, 6)
+                    }
+                    if !store.viewModel.days.isEmpty {
+                        HStack(spacing: 0) {
+                            ForEach(store.viewModel.days) { day in
+                                VStack(spacing: 4) {
+                                    Text(day.weekday)
+                                        .font(.system(size: 9, weight: .semibold))
+                                        .tracking(0.8)
+                                        .foregroundStyle(day.isToday ? Theme.ink : Theme.secondary)
+                                    Text(day.amountText)
+                                        .font(Theme.serif(13))
+                                        .foregroundStyle(day.isMuted ? Theme.hairline
+                                                         : (day.isToday ? Theme.ink : Theme.secondary))
+                                        .strikethrough(day.isMuted, color: Theme.hairline)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.6)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        }
+                        .padding(.top, 18)
                     }
                     SectionLabel("History")
                         .padding(.top, 36)
@@ -160,6 +183,15 @@ struct CategoryDetailView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
+                    showTransferSheet = true
+                } label: {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .fontWeight(.medium)
+                        .foregroundStyle(Theme.ink)
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
                     goalAmountText = store.viewModel.goalAmount.map {
                         MoneyFormat.amount($0).replacingOccurrences(of: " ", with: "")
                     } ?? ""
@@ -181,10 +213,24 @@ struct CategoryDetailView: View {
             store.interactor?.undoDeleteTransaction()
         }
         .sheet(isPresented: $showGoalSheet) { goalSheet }
+        .sheet(isPresented: $showTransferSheet) {
+            TransferSheet(
+                jars: StorageWorker.shared.sortedCategories()
+                    .filter { $0.id != categoryId }
+                    .map { .init(id: $0.id, name: $0.name) },
+                fixedFrom: .init(id: categoryId, name: store.viewModel.title),
+                onSave: { _, toId, amount in
+                    store.interactor?.transfer(request: .init(toId: toId, amount: amount))
+                    showTransferSheet = false
+                },
+                onCancel: { showTransferSheet = false }
+            )
+        }
         .onAppear { store.interactor?.load(request: .init()) }
     }
 
     @State private var showUndoToast = false
+    @State private var showTransferSheet = false
     @State private var showGoalSheet = false
     @State private var goalAmountText = ""
     @State private var goalHasDate = false

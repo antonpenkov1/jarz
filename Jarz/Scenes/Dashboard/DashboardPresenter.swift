@@ -20,35 +20,6 @@ final class DashboardPresenter: DashboardPresentationLogic {
                 ? min(1, (plan.available as NSDecimalNumber).doubleValue / (daily as NSDecimalNumber).doubleValue)
                 : 0
 
-            var days: [Dashboard.Load.ViewModel.FoodCard.DayCell] = []
-            if !isNegative {
-                let calendar = Calendar.current
-                let today = calendar.startOfDay(for: Date())
-                let weekdayFormatter = DateFormatter()
-                weekdayFormatter.dateFormat = "EE"
-                let aheadDays = calendar.dateComponents(
-                    [.day], from: today, to: calendar.startOfDay(for: plan.dayDate)).day ?? 0
-                for offset in 0..<7 {
-                    guard let date = calendar.date(byAdding: .day, value: offset, to: today),
-                          date <= plan.planEnd else { break }
-                    let amount: Decimal
-                    if offset < aheadDays {
-                        amount = 0
-                    } else if offset == aheadDays {
-                        amount = max(0, plan.available)
-                    } else {
-                        amount = daily
-                    }
-                    days.append(.init(
-                        id: offset,
-                        weekday: weekdayFormatter.string(from: date).uppercased(),
-                        amountText: MoneyFormat.amount(amount),
-                        isMuted: offset < aheadDays,
-                        isToday: offset == 0
-                    ))
-                }
-            }
-
             foodCard = Dashboard.Load.ViewModel.FoodCard(
                 name: food.category.name,
                 balanceText: MoneyFormat.money(food.balance, symbol: symbol),
@@ -64,8 +35,7 @@ final class DashboardPresenter: DashboardPresentationLogic {
                         ? String(localized: "+\(plan.daysLeft) days · until \(FoodDay.dateText(plan.planEnd))")
                         : String(localized: "last plan day · until \(FoodDay.dateText(plan.planEnd))")),
                 isNegative: isNegative,
-                dayProgress: progress,
-                days: days
+                dayProgress: progress
             )
         }
 
