@@ -35,12 +35,25 @@ final class RecapPresenter: RecapPresentationLogic {
             topSpendingLine = String(localized: "Most spent: \(top.category.name) — \(MoneyFormat.money(top.spent, symbol: symbol))")
         }
 
+        let maxSpent = response.pastPeriods.map(\.spent).max() ?? 0
+        let pastRows = response.pastPeriods.enumerated().map { index, period in
+            Recap.Load.ViewModel.PastRow(
+                id: index,
+                rangeText: "\(FoodDay.dateText(period.start)) – \(FoodDay.dateText(period.end))",
+                amountsText: "\(MoneyFormat.amount(period.spent)) / \(MoneyFormat.money(period.allocated, symbol: symbol))",
+                barValue: maxSpent > 0
+                    ? (period.spent as NSDecimalNumber).doubleValue / (maxSpent as NSDecimalNumber).doubleValue
+                    : 0
+            )
+        }
+
         view?.displayRecap(viewModel: .init(
             periodText: String(localized: "since \(FoodDay.dateText(start))"),
             totalSpentText: MoneyFormat.money(totalSpent, symbol: symbol),
             foodLine: foodLine,
             topSpendingLine: topSpendingLine,
             rows: rows,
+            pastRows: pastRows,
             isEmpty: false
         ))
     }

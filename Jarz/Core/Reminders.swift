@@ -59,6 +59,30 @@ enum Reminders {
             }
 
             scheduleRevisionIfEnabled(center: center, defaults: defaults)
+            scheduleRecurring(center: center, worker: worker, symbol: symbol)
+        }
+    }
+
+    /// Heads-up on the morning a recurring payment gets logged (next 30 days).
+    private static func scheduleRecurring(center: UNUserNotificationCenter,
+                                          worker: StorageWorker, symbol: String) {
+        let calendar = Calendar.current
+        let horizon = calendar.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+        for recurring in worker.recurrings() {
+            let jarName = worker.category(id: recurring.categoryId)?.name ?? ""
+            var components = calendar.dateComponents([.year, .month], from: Date())
+            components.day = recurring.dayOfMonth
+            components.hour = 10
+            for monthOffset in 0...1 {
+                guard let base = calendar.date(from: components),
+                      let fire = calendar.date(byAdding: .month, value: monthOffset, to: base),
+                      fire > Date(), fire <= horizon else { continue }
+                let money = MoneyFormat.money(recurring.amount, symbol: symbol)
+                add(center: center,
+                    id: "\(idPrefix)recurring.\(recurring.id).\(monthOffset)",
+                    fireDate: fire,
+                    body: String(localized: "\(recurring.name) — \(money) from \(jarName)"))
+            }
         }
     }
 

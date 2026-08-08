@@ -45,7 +45,20 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
             }
         }
 
-        let rows = response.transactions.map { transaction in
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "LLLL yyyy"
+        // Transactions arrive newest-first; group into month sections in order.
+        var sections: [CategoryDetail.Load.ViewModel.MonthSection] = []
+        var currentKey = ""
+        var currentRows: [CategoryDetail.Load.ViewModel.Row] = []
+        func flushSection() {
+            guard !currentRows.isEmpty else { return }
+            sections.append(.init(id: currentKey,
+                                  title: currentKey.capitalized,
+                                  rows: currentRows))
+            currentRows = []
+        }
+        for transaction in response.transactions {
             let isOutflow = transaction.kind == .expense || transaction.kind == .transferOut
             let kindLabel: String
             switch transaction.kind {
@@ -53,7 +66,12 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
             case .transferIn, .transferOut: kindLabel = String(localized: "Transfer")
             default: kindLabel = ""
             }
-            return CategoryDetail.Load.ViewModel.Row(
+            let monthKey = monthFormatter.string(from: transaction.date)
+            if monthKey != currentKey {
+                flushSection()
+                currentKey = monthKey
+            }
+            currentRows.append(CategoryDetail.Load.ViewModel.Row(
                 id: transaction.id,
                 dateText: Self.dateFormatter.string(from: transaction.date),
                 note: transaction.note,
@@ -62,8 +80,9 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
                 isExpense: isOutflow,
                 kindLabel: kindLabel,
                 isEditable: transaction.kind == .expense || transaction.kind == .topUp
-            )
+            ))
         }
+        flushSection()
 
         var goalLine: String?
         if let goal = response.category.goalAmount, goal > 0 {
@@ -83,7 +102,7 @@ final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
             goalLine: goalLine,
             goalAmount: response.category.goalAmount,
             goalDate: response.category.goalDate,
-            rows: rows
+            sections: sections
         )
         view?.displayDetail(viewModel: viewModel)
     }

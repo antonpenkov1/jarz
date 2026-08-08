@@ -37,14 +37,19 @@ enum CategoryDetail {
             let foodLine: String?
             /// The next week of the food plan; empty for non-food jars.
             let days: [DayCell]
+            struct MonthSection: Identifiable {
+                let id: String
+                let title: String
+                let rows: [Row]
+            }
             let goalLine: String?
             let goalAmount: Decimal?
             let goalDate: Date?
-            let rows: [Row]
+            let sections: [MonthSection]
 
             static let empty = ViewModel(
                 title: "", balanceText: "", isNegative: false, foodLine: nil, days: [],
-                goalLine: nil, goalAmount: nil, goalDate: nil, rows: []
+                goalLine: nil, goalAmount: nil, goalDate: nil, sections: []
             )
         }
     }

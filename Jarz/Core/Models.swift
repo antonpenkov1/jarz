@@ -51,6 +51,17 @@ struct ReconciliationAccount: Codable, Identifiable, Hashable {
     var amount: Decimal = 0
 }
 
+/// A monthly bill that logs itself: "Spotify, 1 200, on the 15th".
+struct RecurringPayment: Codable, Identifiable, Hashable {
+    var id: UUID = UUID()
+    var name: String
+    var amount: Decimal
+    var categoryId: UUID
+    var dayOfMonth: Int
+    var createdAt: Date = Date()
+    var lastApplied: Date?
+}
+
 /// One card/cash line inside a saved revision snapshot.
 struct RevisionEntry: Codable, Hashable {
     var name: String

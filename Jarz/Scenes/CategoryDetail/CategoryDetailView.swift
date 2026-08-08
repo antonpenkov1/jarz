@@ -119,57 +119,32 @@ struct CategoryDetailView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 8, trailing: 28))
             }
 
-            Section {
-                if store.viewModel.rows.isEmpty {
+            if filteredSections.isEmpty {
+                Section {
                     Text("No operations yet")
                         .font(.system(size: 16))
                         .foregroundStyle(Theme.secondary)
                         .listRowBackground(Theme.bg)
                         .listRowInsets(EdgeInsets(top: 16, leading: 28, bottom: 16, trailing: 28))
                 }
-                ForEach(store.viewModel.rows) { row in
-                    Button {
-                        if row.isEditable { store.presentEditSheet(rowId: row.id) }
-                    } label: {
-                        HStack(alignment: .firstTextBaseline) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                if !row.note.isEmpty {
-                                    Text(row.note)
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(Theme.ink)
-                                }
-                                if !row.kindLabel.isEmpty {
-                                    Text(row.kindLabel.uppercased())
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .tracking(1.5)
-                                        .foregroundStyle(Theme.accent)
-                                }
-                                Text(row.dateText)
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(Theme.secondary)
-                            }
-                            Spacer()
-                            AmountText(text: row.amountText,
-                                       color: row.isExpense ? Theme.ink : Theme.accent)
-                        }
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
+            }
+            ForEach(filteredSections) { section in
+                Section {
+                    ForEach(section.rows) { row in
+                        transactionRow(row)
                     }
-                    .listRowBackground(Theme.bg)
-                    .listRowSeparatorTint(Theme.hairline)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 28, bottom: 8, trailing: 28))
-                    .swipeActions {
-                        Button("Delete", role: .destructive) {
-                            store.interactor?.deleteTransaction(request: .init(transactionId: row.id))
-                            showUndoToast = true
-                        }
-                    }
+                } header: {
+                    SectionLabel(section.title)
+                        .padding(.leading, 20)
                 }
+                .listRowBackground(Theme.bg)
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Theme.bg.ignoresSafeArea())
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic),
+                    prompt: Text("Search notes"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -231,6 +206,58 @@ struct CategoryDetailView: View {
 
     @State private var showUndoToast = false
     @State private var showTransferSheet = false
+    @State private var searchText = ""
+
+    private var filteredSections: [CategoryDetail.Load.ViewModel.MonthSection] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return store.viewModel.sections }
+        return store.viewModel.sections.compactMap { section in
+            let rows = section.rows.filter {
+                $0.note.localizedCaseInsensitiveContains(query)
+            }
+            return rows.isEmpty ? nil
+                : .init(id: section.id, title: section.title, rows: rows)
+        }
+    }
+
+    private func transactionRow(_ row: CategoryDetail.Load.ViewModel.Row) -> some View {
+        Button {
+            if row.isEditable { store.presentEditSheet(rowId: row.id) }
+        } label: {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if !row.note.isEmpty {
+                        Text(row.note)
+                            .font(.system(size: 16))
+                            .foregroundStyle(Theme.ink)
+                    }
+                    if !row.kindLabel.isEmpty {
+                        Text(row.kindLabel.uppercased())
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(1.5)
+                            .foregroundStyle(Theme.accent)
+                    }
+                    Text(row.dateText)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.secondary)
+                }
+                Spacer()
+                AmountText(text: row.amountText,
+                           color: row.isExpense ? Theme.ink : Theme.accent)
+            }
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .listRowBackground(Theme.bg)
+        .listRowSeparatorTint(Theme.hairline)
+        .listRowInsets(EdgeInsets(top: 8, leading: 28, bottom: 8, trailing: 28))
+        .swipeActions {
+            Button("Delete", role: .destructive) {
+                store.interactor?.deleteTransaction(request: .init(transactionId: row.id))
+                showUndoToast = true
+            }
+        }
+    }
     @State private var showGoalSheet = false
     @State private var goalAmountText = ""
     @State private var goalHasDate = false

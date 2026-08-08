@@ -89,6 +89,22 @@ Privacy policy page lives in `docs/privacy.html`, published at https://antonpenk
 • Lock Jarz with Face ID.
 ```
 
+## 1.3 (2026-08-08)
+
+ВАЖНО: включена поддержка iPad → в ASC потребуется набор iPad-скриншотов (13", 2064×2752). Виджет получил кнопки — интенты пишут в общий store из процесса виджета (CloudKit в extension отключён, `StorageWorker.isExtension`).
+
+### What's New — вставить в ASC как есть
+
+```
+• Interactive widget: log a food expense right from your home screen, and a new Lock Screen widget keeps today's budget next to the clock.
+• Siri: "Log a food expense in Jarz" or "How much is left for food in Jarz".
+• Recurring payments: monthly bills log themselves on their day.
+• Period archive: past paydays with totals and a spending chart.
+• Search your history, now grouped by month.
+• Export your transactions as CSV.
+• Jarz now runs on iPad.
+```
+
 ## Assets
 
 - App icon source: `IconDrafts/variant-b-night-jar.svg` (правки → перерендер: `rsvg-convert -w 1024 -h 1024 in.svg -o out.png`, затем убрать альфа-канал через sips как в AppIcon.png).

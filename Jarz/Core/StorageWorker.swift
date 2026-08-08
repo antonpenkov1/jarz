@@ -80,6 +80,29 @@ final class JarAccount {
 }
 
 @Model
+final class JarRecurring {
+    var id: UUID = UUID()
+    var name: String = ""
+    var amount: Decimal = 0
+    var categoryId: UUID = UUID()
+    /// 1…28 to exist in every month.
+    var dayOfMonth: Int = 1
+    var createdAt: Date = Date()
+    var lastApplied: Date?
+
+    init(id: UUID = UUID(), name: String, amount: Decimal, categoryId: UUID,
+         dayOfMonth: Int, createdAt: Date = Date(), lastApplied: Date? = nil) {
+        self.id = id
+        self.name = name
+        self.amount = amount
+        self.categoryId = categoryId
+        self.dayOfMonth = dayOfMonth
+        self.createdAt = createdAt
+        self.lastApplied = lastApplied
+    }
+}
+
+@Model
 final class JarRevision {
     var id: UUID = UUID()
     var date: Date = Date()
@@ -111,6 +134,10 @@ final class StorageWorker {
     /// iCloud is unavailable.
     private static let iCloudSyncEnabled = true
 
+    /// True inside the widget extension: same shared store, but no CloudKit
+    /// mirroring and no notification scheduling from that process.
+    static let isExtension = Bundle.main.bundleURL.pathExtension == "appex"
+
     private let container: ModelContainer
     private let context: ModelContext
 
@@ -120,11 +147,11 @@ final class StorageWorker {
         // 1.0.x users keep their data after updating.
         Self.migrateStoreToAppGroupIfNeeded()
         let schema = Schema([JarCategory.self, JarTransaction.self, JarSettings.self,
-                             JarAccount.self, JarRevision.self])
+                             JarAccount.self, JarRevision.self, JarRecurring.self])
         do {
             let config = ModelConfiguration(
                 schema: schema,
-                cloudKitDatabase: Self.iCloudSyncEnabled ? .automatic : .none
+                cloudKitDatabase: Self.iCloudSyncEnabled && !Self.isExtension ? .automatic : .none
             )
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
@@ -137,6 +164,7 @@ final class StorageWorker {
 
         migrateFromJSONIfNeeded()
         seedIfNeeded()
+        applyDueRecurrings()
         publishWidgetSnapshot()
 
         // CloudKit pushes arrive as Core Data remote-change notifications.
@@ -233,6 +261,59 @@ final class StorageWorker {
         guard let model = transactionModel(id: id) else { return }
         context.delete(model)
         save()
+    }
+
+    // MARK: Recurring payments
+
+    func recurrings() -> [RecurringPayment] {
+        let fetch = FetchDescriptor<JarRecurring>(sortBy: [SortDescriptor(\.dayOfMonth)])
+        return ((try? context.fetch(fetch)) ?? []).map {
+            RecurringPayment(id: $0.id, name: $0.name, amount: $0.amount,
+                             categoryId: $0.categoryId, dayOfMonth: $0.dayOfMonth,
+                             createdAt: $0.createdAt, lastApplied: $0.lastApplied)
+        }
+    }
+
+    func addRecurring(name: String, amount: Decimal, categoryId: UUID, dayOfMonth: Int) {
+        context.insert(JarRecurring(name: name, amount: amount,
+                                    categoryId: categoryId,
+                                    dayOfMonth: min(max(dayOfMonth, 1), 28)))
+        save()
+    }
+
+    func deleteRecurring(id: UUID) {
+        let fetch = FetchDescriptor<JarRecurring>(predicate: #Predicate { $0.id == id })
+        guard let model = (try? context.fetch(fetch))?.first else { return }
+        context.delete(model)
+        save()
+    }
+
+    /// Logs every recurring payment whose due date has passed since it was
+    /// created / last applied. Called on launch and on foreground.
+    func applyDueRecurrings() {
+        let calendar = Calendar.current
+        let now = Date()
+        var appliedAny = false
+        for model in (try? context.fetch(FetchDescriptor<JarRecurring>())) ?? [] {
+            var cursor = calendar.startOfDay(for: model.lastApplied ?? model.createdAt)
+            while true {
+                var components = calendar.dateComponents([.year, .month], from: cursor)
+                components.day = model.dayOfMonth
+                guard var due = calendar.date(from: components) else { break }
+                if due <= cursor {
+                    guard let next = calendar.date(byAdding: .month, value: 1, to: due) else { break }
+                    due = next
+                }
+                guard due <= now else { break }
+                context.insert(JarTransaction(
+                    categoryId: model.categoryId, kind: .expense, amount: model.amount,
+                    note: model.name, date: due))
+                model.lastApplied = due
+                cursor = due
+                appliedAny = true
+            }
+        }
+        if appliedAny { save() }
     }
 
     func setGoal(categoryId: UUID, amount: Decimal?, date: Date?) {
@@ -368,6 +449,8 @@ final class StorageWorker {
         var settings: AppSettings
         var accounts: [ReconciliationAccount]
         var revisions: [BackupRevision]
+        /// Absent in pre-1.3 backups.
+        var recurrings: [RecurringPayment]?
     }
 
     private struct BackupRevision: Codable {
@@ -390,12 +473,35 @@ final class StorageWorker {
             accounts: accounts(),
             revisions: revisions().map {
                 BackupRevision(date: $0.date, planned: $0.planned, counted: $0.counted, entries: $0.entries)
-            }
+            },
+            recurrings: recurrings()
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         return try? encoder.encode(payload)
+    }
+
+    /// All transactions as a flat spreadsheet-friendly CSV (UTF-8 with BOM).
+    func exportCSV() -> Data? {
+        let formatter = ISO8601DateFormatter()
+        var lines = ["date,jar,kind,amount,note"]
+        for category in sortedCategories() {
+            for transaction in transactions(categoryId: category.id).sorted(by: { $0.date < $1.date }) {
+                let note = transaction.note
+                    .replacingOccurrences(of: "\"", with: "\"\"")
+                lines.append([
+                    formatter.string(from: transaction.date),
+                    "\"\(category.name.replacingOccurrences(of: "\"", with: "\"\""))\"",
+                    transaction.kind.rawValue,
+                    "\(NSDecimalNumber(decimal: transaction.signedAmount))",
+                    "\"\(note)\"",
+                ].joined(separator: ","))
+            }
+        }
+        let bom = Data([0xEF, 0xBB, 0xBF])
+        guard let body = lines.joined(separator: "\n").data(using: .utf8) else { return nil }
+        return bom + body
     }
 
     /// Restores a backup produced by `exportJSON`, replacing everything.
@@ -410,6 +516,7 @@ final class StorageWorker {
         for model in (try? context.fetch(FetchDescriptor<JarAccount>())) ?? [] { context.delete(model) }
         for model in (try? context.fetch(FetchDescriptor<JarRevision>())) ?? [] { context.delete(model) }
         for model in (try? context.fetch(FetchDescriptor<JarSettings>())) ?? [] { context.delete(model) }
+        for model in (try? context.fetch(FetchDescriptor<JarRecurring>())) ?? [] { context.delete(model) }
 
         for category in payload.categories {
             context.insert(JarCategory(id: category.id, name: category.name, order: category.order,
@@ -428,6 +535,13 @@ final class StorageWorker {
             let entriesData = (try? JSONEncoder().encode(revision.entries)) ?? Data()
             context.insert(JarRevision(date: revision.date, planned: revision.planned,
                                        counted: revision.counted, entriesData: entriesData))
+        }
+        for recurring in payload.recurrings ?? [] {
+            context.insert(JarRecurring(id: recurring.id, name: recurring.name,
+                                        amount: recurring.amount, categoryId: recurring.categoryId,
+                                        dayOfMonth: recurring.dayOfMonth,
+                                        createdAt: recurring.createdAt,
+                                        lastApplied: recurring.lastApplied))
         }
         saveSettings(payload.settings)
         return true
@@ -474,7 +588,9 @@ final class StorageWorker {
         try? context.save()
         NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
         publishWidgetSnapshot()
-        Reminders.reschedule(worker: self)
+        if !Self.isExtension {
+            Reminders.reschedule(worker: self)
+        }
     }
 
     /// Mirrors the food state into the app group so the widget can render

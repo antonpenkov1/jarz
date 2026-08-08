@@ -89,6 +89,35 @@ struct RecapView: View {
                         .padding(.vertical, 14)
                         Hairline()
                     }
+
+                    if !store.viewModel.pastRows.isEmpty {
+                        SectionLabel("Past periods")
+                            .padding(.top, 40)
+                            .padding(.bottom, 4)
+
+                        ForEach(store.viewModel.pastRows) { period in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(period.rangeText)
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(Theme.ink)
+                                    Spacer()
+                                    AmountText(text: period.amountsText, size: 14,
+                                               color: Theme.secondary)
+                                }
+                                GeometryReader { geo in
+                                    ZStack(alignment: .leading) {
+                                        Rectangle().fill(Theme.hairline)
+                                        Rectangle().fill(Theme.accent)
+                                            .frame(width: geo.size.width * period.barValue)
+                                    }
+                                }
+                                .frame(height: 3)
+                            }
+                            .padding(.vertical, 12)
+                            Hairline()
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 28)

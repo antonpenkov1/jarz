@@ -60,12 +60,34 @@ final class RecapInteractor: RecapBusinessLogic {
             }
         }
 
+        // Closed periods: consecutive pairs of distinct income days (newest first).
+        var pastPeriods: [Recap.Load.Response.PastPeriod] = []
+        let calendar = Calendar.current
+        let allTransactions = byCategory.flatMap { $0.1 }
+        let incomeDays = Set(allTransactions
+            .filter { $0.kind == .allocation }
+            .map { calendar.startOfDay(for: $0.date) })
+            .sorted(by: >)
+        for (index, start) in incomeDays.enumerated() where index > 0 {
+            let end = incomeDays[index - 1]
+            let inPeriod = allTransactions.filter { $0.date >= start && $0.date < end }
+            let spent = inPeriod
+                .filter { $0.kind == .expense || $0.kind == .transferOut }
+                .reduce(Decimal.zero) { $0 + $1.amount }
+            let allocated = inPeriod
+                .filter { $0.kind == .allocation || $0.kind == .topUp || $0.kind == .transferIn }
+                .reduce(Decimal.zero) { $0 + $1.amount }
+            pastPeriods.append(.init(start: start, end: end, spent: spent, allocated: allocated))
+            if pastPeriods.count == 6 { break }
+        }
+
         presenter.presentRecap(response: .init(
             periodStart: periodStart,
             jarStats: jarStats,
             foodOnPlanDays: foodOnPlanDays,
             foodTotalDays: foodTotalDays,
             hasFoodPlan: settings.foodCategoryId != nil && settings.dailyFoodAmount > 0,
+            pastPeriods: pastPeriods,
             currencySymbol: settings.currencySymbol
         ))
     }

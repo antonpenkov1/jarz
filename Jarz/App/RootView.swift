@@ -49,6 +49,9 @@ struct RootView: View {
             if phase == .background && AppLock.isEnabled {
                 isLocked = true
             }
+            if phase == .active {
+                StorageWorker.shared.applyDueRecurrings()
+            }
         }
     }
 

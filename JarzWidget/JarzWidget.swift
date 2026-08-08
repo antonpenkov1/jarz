@@ -56,26 +56,61 @@ struct FoodWidgetView: View {
     var entry: FoodEntry
     @Environment(\.widgetFamily) private var family
 
+    private var isAccessory: Bool {
+        family == .accessoryRectangular || family == .accessoryInline
+    }
+
     var body: some View {
         Group {
             if let snapshot = entry.snapshot,
                let plan = FoodMath.plan(balance: snapshot.balance, daily: snapshot.daily,
                                         planEnd: snapshot.planEnd, now: entry.date) {
-                card(snapshot: snapshot, plan: plan)
+                if isAccessory {
+                    accessory(snapshot: snapshot, plan: plan)
+                } else {
+                    card(snapshot: snapshot, plan: plan)
+                }
             } else {
                 VStack(spacing: 6) {
                     Text("Jarz")
                         .font(.system(size: 11, weight: .semibold))
                         .tracking(2)
-                        .foregroundStyle(WTheme.secondary)
+                        .foregroundStyle(isAccessory ? AnyShapeStyle(.primary) : AnyShapeStyle(WTheme.secondary))
                     Text("Set a daily food budget in Settings")
                         .font(.system(size: 13))
-                        .foregroundStyle(WTheme.ink)
+                        .foregroundStyle(isAccessory ? AnyShapeStyle(.primary) : AnyShapeStyle(WTheme.ink))
                         .multilineTextAlignment(.center)
                 }
             }
         }
-        .containerBackground(for: .widget) { WTheme.bg }
+        .containerBackground(for: .widget) {
+            if isAccessory {
+                Color.clear
+            } else {
+                WTheme.bg
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func accessory(snapshot: FoodSnapshot, plan: FoodMath.FoodPlan) -> some View {
+        let amount = MoneyFormat.amount(snapshot.balance < 0 ? snapshot.balance : plan.available)
+        switch family {
+        case .accessoryInline:
+            Text("\(snapshot.name): \(amount)")
+        default:
+            VStack(alignment: .leading, spacing: 2) {
+                Text(snapshot.name.uppercased())
+                    .font(.caption2)
+                    .opacity(0.7)
+                Text(amount)
+                    .font(.system(size: 22, weight: .semibold, design: .serif))
+                Text(FoodDay.phrase(for: plan.dayDate, relativeTo: entry.date))
+                    .font(.caption2)
+                    .opacity(0.7)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private func card(snapshot: FoodSnapshot, plan: FoodMath.FoodPlan) -> some View {
@@ -127,12 +162,32 @@ struct FoodWidgetView: View {
                     }
                 }
                 .frame(height: 2)
-                Text("until \(FoodDay.dateText(plan.planEnd))")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(WTheme.accent)
-                    .padding(.top, 5)
+                HStack {
+                    Text("until \(FoodDay.dateText(plan.planEnd))")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(WTheme.accent)
+                    if family == .systemMedium {
+                        Spacer()
+                        quickButton(amount: 100)
+                        quickButton(amount: 500)
+                    }
+                }
+                .padding(.top, 5)
             }
         }
+    }
+
+    /// Interactive one-tap expense straight from the widget (iOS 17).
+    private func quickButton(amount: Int) -> some View {
+        Button(intent: LogFoodExpenseIntent(amount: Double(amount))) {
+            Text("−\(amount)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(WTheme.ink)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(Capsule().stroke(WTheme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private func progress(plan: FoodMath.FoodPlan, daily: Decimal) -> Double {
@@ -148,7 +203,7 @@ struct FoodWidget: Widget {
         }
         .configurationDisplayName("Food today")
         .description("What's left to spend on food today.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
     }
 }
 

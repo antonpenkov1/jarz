@@ -223,6 +223,12 @@ struct SettingsView: View {
             .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView { showOnboarding = false }
             }
+            .sheet(isPresented: $showRecurring) {
+                RecurringSheet {
+                    showRecurring = false
+                    Reminders.reschedule(worker: .shared)
+                }
+            }
             .sheet(item: $exportURL) { item in
                 ShareSheet(items: [item.url])
             }
@@ -268,6 +274,8 @@ struct SettingsView: View {
     @AppStorage(Reminders.revisionKey) private var remindRevision = false
     @AppStorage(AppLock.storageKey) private var appLockEnabled = false
 
+    @State private var showExportDialog = false
+    @State private var showRecurring = false
     @State private var showImportPicker = false
     @State private var pendingImportData: Data?
     @State private var showImportResult = false
@@ -340,6 +348,7 @@ struct SettingsView: View {
                 .foregroundStyle(Theme.ink)
         }
         .tint(Theme.accent)
+        settingsButton("Recurring payments", icon: "chevron.right") { showRecurring = true }
     }
 
     private var privacyRows: some View {
@@ -367,7 +376,11 @@ struct SettingsView: View {
             .font(.system(size: 12))
             .foregroundStyle(Theme.secondary)
 
-        settingsButton("Export data", icon: "square.and.arrow.up") { exportData() }
+        settingsButton("Export data", icon: "square.and.arrow.up") { showExportDialog = true }
+            .confirmationDialog("Choose format", isPresented: $showExportDialog, titleVisibility: .visible) {
+                Button("JSON (full backup)") { exportData(csv: false) }
+                Button("CSV (spreadsheet)") { exportData(csv: true) }
+            }
         settingsButton("Import data", icon: "square.and.arrow.down") { showImportPicker = true }
     }
 
@@ -407,12 +420,13 @@ struct SettingsView: View {
         }
     }
 
-    private func exportData() {
-        guard let data = StorageWorker.shared.exportJSON() else { return }
+    private func exportData(csv: Bool) {
+        guard let data = csv ? StorageWorker.shared.exportCSV() : StorageWorker.shared.exportJSON()
+        else { return }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Jarz-backup-\(formatter.string(from: Date())).json")
+        let name = "Jarz-\(csv ? "transactions" : "backup")-\(formatter.string(from: Date())).\(csv ? "csv" : "json")"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         guard (try? data.write(to: url)) != nil else { return }
         exportURL = ExportItem(url: url)
     }
