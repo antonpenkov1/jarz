@@ -194,13 +194,20 @@ enum FoodMath {
         return days
     }
 
-    /// Fixes the plan horizon from the balance at income time:
-    /// today plus one day per full daily budget in the balance.
-    static func planEnd(balance: Decimal, daily: Decimal, now: Date = Date()) -> Date? {
-        guard daily > 0, balance > 0 else { return nil }
+    /// Income moves the horizon by exactly the allocated amount: one day per
+    /// full daily budget. An active plan is EXTENDED from its fixed end date
+    /// (surplus money stays as today's cushion instead of stretching the
+    /// horizon); an expired or missing plan is anchored fresh from today.
+    static func extendPlanEnd(current: Date?, allocation: Decimal, daily: Decimal,
+                              now: Date = Date()) -> Date? {
+        guard daily > 0, allocation > 0 else { return current }
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
-        return calendar.date(byAdding: .day, value: max(0, Self.wholeDays(balance / daily) - 1), to: today)
+        let days = wholeDays(allocation / daily)
+        if let currentEnd = current.map({ calendar.startOfDay(for: $0) }), currentEnd >= today {
+            return calendar.date(byAdding: .day, value: days, to: currentEnd) ?? currentEnd
+        }
+        return calendar.date(byAdding: .day, value: max(0, days - 1), to: today)
     }
 
     private static func wholeDays(_ value: Decimal) -> Int {

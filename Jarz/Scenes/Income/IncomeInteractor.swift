@@ -45,13 +45,13 @@ final class IncomeInteractor: IncomeBusinessLogic {
     func save(request: Income.Save.Request) {
         var allocated = Decimal.zero
         let date = Date()
-        var foodAllocated = false
+        var foodAllocation = Decimal.zero
         var settings = worker.settings()
         for category in worker.sortedCategories() {
             guard let text = request.amounts[category.id],
                   let amount = MoneyFormat.parse(text), amount > 0 else { continue }
             allocated += amount
-            if category.id == settings.foodCategoryId { foodAllocated = true }
+            if category.id == settings.foodCategoryId { foodAllocation = amount }
             worker.addTransaction(
                 categoryId: category.id,
                 kind: .allocation,
@@ -60,11 +60,12 @@ final class IncomeInteractor: IncomeBusinessLogic {
                 date: date
             )
         }
-        // Income re-anchors the food plan: the new balance is laid out over
-        // concrete calendar days and the end date stays fixed until next income.
-        if foodAllocated, let foodId = settings.foodCategoryId, settings.dailyFoodAmount > 0 {
-            settings.foodPlanEnd = FoodMath.planEnd(
-                balance: worker.balance(of: foodId),
+        // Income extends the fixed food horizon by exactly allocation/daily
+        // days; nothing else ever moves that date. Surplus stays with today.
+        if foodAllocation > 0, settings.foodCategoryId != nil, settings.dailyFoodAmount > 0 {
+            settings.foodPlanEnd = FoodMath.extendPlanEnd(
+                current: settings.foodPlanEnd,
+                allocation: foodAllocation,
                 daily: settings.dailyFoodAmount,
                 now: date
             )
