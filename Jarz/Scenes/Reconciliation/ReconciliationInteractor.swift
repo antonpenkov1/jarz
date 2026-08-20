@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol ReconciliationBusinessLogic {
     func load(request: Reconciliation.Load.Request)
     func save(request: Reconciliation.Save.Request)
@@ -7,11 +8,12 @@ protocol ReconciliationBusinessLogic {
     func zeroOut(request: Reconciliation.ZeroOut.Request)
 }
 
+@MainActor
 final class ReconciliationInteractor: ReconciliationBusinessLogic {
     private let presenter: ReconciliationPresentationLogic
     private let worker: StorageWorker
 
-    init(presenter: ReconciliationPresentationLogic, worker: StorageWorker = .shared) {
+    init(presenter: ReconciliationPresentationLogic, worker: StorageWorker) {
         self.presenter = presenter
         self.worker = worker
     }

@@ -107,6 +107,18 @@ Mac: приложение доступно на Apple Silicon Mac как «Desig
 • Jarz now runs on iPad — and on Apple Silicon Macs.
 ```
 
+## 1.3.1 (2026-08-20) — hotfix краша Settings
+
+Причина (пойман на устройстве Антона через devicectl-консоль): `SwiftData/ModelContext.swift:506 Fatal error: Duplicate registration attempt` — гонка кастомного долгоживущего ModelContext с CloudKit-импортом; триггер — запись настроек в момент открытия вкладки Settings во время активного импорта. Фикс: mainContext вместо кастомного контекста, коалесинг remote-change уведомлений, отказ от записи при открытии Settings, весь VIP-слой на @MainActor.
+
+### What's New — вставить в ASC как есть
+
+```
+Fixes a crash when opening Settings while iCloud sync was catching up. Thanks for the reports!
+```
+
+При сабмите: запросить ускоренное ревью (App Store Connect → Contact Us → App Review → Request Expedited Review, причина: critical bug fix — crash in production).
+
 ## Assets
 
 - App icon source: `IconDrafts/variant-b-night-jar.svg` (правки → перерендер: `rsvg-convert -w 1024 -h 1024 in.svg -o out.png`, затем убрать альфа-канал через sips как в AppIcon.png).

@@ -1,15 +1,17 @@
 import Foundation
 
+@MainActor
 protocol IncomeBusinessLogic {
     func prepare(request: Income.Prepare.Request)
     func save(request: Income.Save.Request)
 }
 
+@MainActor
 final class IncomeInteractor: IncomeBusinessLogic {
     private let presenter: IncomePresentationLogic
     private let worker: StorageWorker
 
-    init(presenter: IncomePresentationLogic, worker: StorageWorker = .shared) {
+    init(presenter: IncomePresentationLogic, worker: StorageWorker) {
         self.presenter = presenter
         self.worker = worker
     }

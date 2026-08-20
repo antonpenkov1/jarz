@@ -1,16 +1,18 @@
 import Foundation
 
+@MainActor
 protocol DashboardBusinessLogic {
     func load(request: Dashboard.Load.Request)
     func addExpense(request: Dashboard.AddExpense.Request)
     func transfer(request: Dashboard.Transfer.Request)
 }
 
+@MainActor
 final class DashboardInteractor: DashboardBusinessLogic {
     private let presenter: DashboardPresentationLogic
     private let worker: StorageWorker
 
-    init(presenter: DashboardPresentationLogic, worker: StorageWorker = .shared) {
+    init(presenter: DashboardPresentationLogic, worker: StorageWorker) {
         self.presenter = presenter
         self.worker = worker
     }

@@ -1,10 +1,12 @@
 import Foundation
 
+@MainActor
 protocol IncomePresentationLogic {
     func presentPrepared(response: Income.Prepare.Response)
     func presentSaved(response: Income.Save.Response)
 }
 
+@MainActor
 final class IncomePresenter: IncomePresentationLogic {
     weak var view: IncomeDisplayLogic?
 

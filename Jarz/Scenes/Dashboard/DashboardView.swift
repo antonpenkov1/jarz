@@ -1,9 +1,11 @@
 import SwiftUI
 
+@MainActor
 protocol DashboardDisplayLogic: AnyObject {
     func displayDashboard(viewModel: Dashboard.Load.ViewModel)
 }
 
+@MainActor
 final class DashboardViewStore: ObservableObject, DashboardDisplayLogic {
     @Published var viewModel: Dashboard.Load.ViewModel = .empty
     var interactor: DashboardBusinessLogic?
@@ -13,12 +15,13 @@ final class DashboardViewStore: ObservableObject, DashboardDisplayLogic {
     }
 }
 
+@MainActor
 enum DashboardConfigurator {
     static func makeView() -> DashboardView {
         let store = DashboardViewStore()
         let presenter = DashboardPresenter()
         presenter.view = store
-        store.interactor = DashboardInteractor(presenter: presenter)
+        store.interactor = DashboardInteractor(presenter: presenter, worker: .shared)
         return DashboardView(store: store)
     }
 }

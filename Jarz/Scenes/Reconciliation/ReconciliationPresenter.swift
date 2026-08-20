@@ -1,9 +1,11 @@
 import Foundation
 
+@MainActor
 protocol ReconciliationPresentationLogic {
     func presentAccounts(response: Reconciliation.Load.Response)
 }
 
+@MainActor
 final class ReconciliationPresenter: ReconciliationPresentationLogic {
     weak var view: ReconciliationDisplayLogic?
 

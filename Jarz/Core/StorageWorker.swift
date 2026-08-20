@@ -124,6 +124,11 @@ final class JarRevision {
 
 /// Single source of truth. SwiftData store synced to the user's private
 /// iCloud database when entitlements allow it; plain local store otherwise.
+/// MainActor-bound: all reads/writes go through the container's mainContext,
+/// which coordinates with CloudKit imports (a custom long-lived context
+/// hits SwiftData's "Duplicate registration" fatal when a fetch or save
+/// races a mirroring merge — crashed 1.3 in production).
+@MainActor
 final class StorageWorker {
     static let shared = StorageWorker()
 
@@ -139,7 +144,7 @@ final class StorageWorker {
     static let isExtension = Bundle.main.bundleURL.pathExtension == "appex"
 
     private let container: ModelContainer
-    private let context: ModelContext
+    private var context: ModelContext { container.mainContext }
 
     private init() {
         // With the app-group entitlement SwiftData silently moved its default
@@ -159,21 +164,31 @@ final class StorageWorker {
             let config = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
             container = try! ModelContainer(for: schema, configurations: [config])
         }
-        context = ModelContext(container)
-        context.autosaveEnabled = false
-
         migrateFromJSONIfNeeded()
         seedIfNeeded()
         applyDueRecurrings()
         publishWidgetSnapshot()
 
-        // CloudKit pushes arrive as Core Data remote-change notifications.
+        // CloudKit pushes arrive as Core Data remote-change notifications,
+        // often in bursts during an import. Coalesce them into a single
+        // stateDidChange on the next runloop tick so the UI doesn't fetch
+        // mid-merge.
         NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main
-        ) { _ in
-            NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                guard !self.remoteChangePending else { return }
+                self.remoteChangePending = true
+                DispatchQueue.main.async {
+                    self.remoteChangePending = false
+                    NotificationCenter.default.post(name: Self.stateDidChange, object: nil)
+                }
+            }
         }
     }
+
+    private var remoteChangePending = false
 
     // MARK: Reads (DTO snapshots)
 

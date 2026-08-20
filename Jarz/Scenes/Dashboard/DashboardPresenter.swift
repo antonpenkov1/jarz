@@ -1,9 +1,11 @@
 import Foundation
 
+@MainActor
 protocol DashboardPresentationLogic {
     func presentDashboard(response: Dashboard.Load.Response)
 }
 
+@MainActor
 final class DashboardPresenter: DashboardPresentationLogic {
     weak var view: DashboardDisplayLogic?
 

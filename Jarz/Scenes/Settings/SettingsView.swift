@@ -1,10 +1,12 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+@MainActor
 protocol SettingsDisplayLogic: AnyObject {
     func displaySettings(viewModel: Settings.Load.ViewModel)
 }
 
+@MainActor
 final class SettingsViewStore: ObservableObject, SettingsDisplayLogic {
     @Published var currencySymbol = ""
     @Published var dailyFoodText = ""
@@ -30,7 +32,10 @@ final class SettingsViewStore: ObservableObject, SettingsDisplayLogic {
         apartmentCategoryId = viewModel.apartmentCategoryId
         billsCategoryId = viewModel.billsCategoryId
         categories = viewModel.categories
-        isLoaded = true
+        // Arm persistence on the NEXT runloop tick: the onChange volley from
+        // populating the fields above lands first and gets ignored, so merely
+        // opening Settings never writes to the store.
+        DispatchQueue.main.async { self.isLoaded = true }
     }
 
     func persistSettings() {
@@ -69,12 +74,13 @@ final class SettingsViewStore: ObservableObject, SettingsDisplayLogic {
     }
 }
 
+@MainActor
 enum SettingsConfigurator {
     static func makeView() -> SettingsView {
         let store = SettingsViewStore()
         let presenter = SettingsPresenter()
         presenter.view = store
-        store.interactor = SettingsInteractor(presenter: presenter)
+        store.interactor = SettingsInteractor(presenter: presenter, worker: .shared)
         return SettingsView(store: store)
     }
 }
@@ -408,7 +414,7 @@ struct SettingsView: View {
         if enabled {
             Reminders.requestAuthorization { granted in
                 if granted {
-                    Reminders.reschedule(worker: .shared)
+                    Task { @MainActor in Reminders.reschedule(worker: .shared) }
                 } else {
                     remindMorning = false
                     remindEvening = false

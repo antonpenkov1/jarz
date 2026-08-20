@@ -1,9 +1,11 @@
 import SwiftUI
 
+@MainActor
 protocol RecapDisplayLogic: AnyObject {
     func displayRecap(viewModel: Recap.Load.ViewModel)
 }
 
+@MainActor
 final class RecapViewStore: ObservableObject, RecapDisplayLogic {
     @Published var viewModel: Recap.Load.ViewModel = .empty
     var interactor: RecapBusinessLogic?
@@ -13,12 +15,13 @@ final class RecapViewStore: ObservableObject, RecapDisplayLogic {
     }
 }
 
+@MainActor
 enum RecapConfigurator {
     static func makeView() -> RecapView {
         let store = RecapViewStore()
         let presenter = RecapPresenter()
         presenter.view = store
-        store.interactor = RecapInteractor(presenter: presenter)
+        store.interactor = RecapInteractor(presenter: presenter, worker: .shared)
         return RecapView(store: store)
     }
 }

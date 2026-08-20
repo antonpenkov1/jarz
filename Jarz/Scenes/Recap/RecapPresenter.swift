@@ -1,9 +1,11 @@
 import Foundation
 
+@MainActor
 protocol RecapPresentationLogic {
     func presentRecap(response: Recap.Load.Response)
 }
 
+@MainActor
 final class RecapPresenter: RecapPresentationLogic {
     weak var view: RecapDisplayLogic?
 

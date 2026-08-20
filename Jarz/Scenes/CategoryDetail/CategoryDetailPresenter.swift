@@ -1,9 +1,11 @@
 import Foundation
 
+@MainActor
 protocol CategoryDetailPresentationLogic {
     func presentDetail(response: CategoryDetail.Load.Response)
 }
 
+@MainActor
 final class CategoryDetailPresenter: CategoryDetailPresentationLogic {
     weak var view: CategoryDetailDisplayLogic?
 

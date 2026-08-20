@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol CategoryDetailBusinessLogic {
     func load(request: CategoryDetail.Load.Request)
     func saveTransaction(request: CategoryDetail.SaveTransaction.Request)
@@ -9,12 +10,13 @@ protocol CategoryDetailBusinessLogic {
     func transfer(request: CategoryDetail.Transfer.Request)
 }
 
+@MainActor
 final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
     private let presenter: CategoryDetailPresentationLogic
     private let worker: StorageWorker
     private let categoryId: UUID
 
-    init(categoryId: UUID, presenter: CategoryDetailPresentationLogic, worker: StorageWorker = .shared) {
+    init(categoryId: UUID, presenter: CategoryDetailPresentationLogic, worker: StorageWorker) {
         self.categoryId = categoryId
         self.presenter = presenter
         self.worker = worker

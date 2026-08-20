@@ -1,9 +1,11 @@
 import SwiftUI
 
+@MainActor
 protocol ReconciliationDisplayLogic: AnyObject {
     func displayAccounts(viewModel: Reconciliation.Load.ViewModel)
 }
 
+@MainActor
 final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogic {
     @Published var accounts: [Reconciliation.Load.ViewModel.AccountForm] = []
     @Published var appTotal: Decimal = 0
@@ -45,12 +47,13 @@ final class ReconciliationViewStore: ObservableObject, ReconciliationDisplayLogi
     }
 }
 
+@MainActor
 enum ReconciliationConfigurator {
     static func makeView() -> ReconciliationView {
         let store = ReconciliationViewStore()
         let presenter = ReconciliationPresenter()
         presenter.view = store
-        store.interactor = ReconciliationInteractor(presenter: presenter)
+        store.interactor = ReconciliationInteractor(presenter: presenter, worker: .shared)
         return ReconciliationView(store: store)
     }
 }

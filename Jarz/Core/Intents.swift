@@ -16,17 +16,19 @@ struct LogFoodExpenseIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let worker = StorageWorker.shared
-        let settings = worker.settings()
-        guard let foodId = settings.foodCategoryId, amount > 0 else {
-            return .result(dialog: IntentDialog(
-                stringLiteral: String(localized: "Set a daily food budget in Settings")))
+        let amount = self.amount
+        let dialogText = await MainActor.run { () -> String in
+            let worker = StorageWorker.shared
+            let settings = worker.settings()
+            guard let foodId = settings.foodCategoryId, amount > 0 else {
+                return String(localized: "Set a daily food budget in Settings")
+            }
+            worker.addTransaction(categoryId: foodId, kind: .expense,
+                                  amount: Decimal(amount), note: "", date: Date())
+            let money = MoneyFormat.money(Decimal(amount), symbol: settings.currencySymbol)
+            return String(localized: "Logged \(money) on food.")
         }
-        worker.addTransaction(categoryId: foodId, kind: .expense,
-                              amount: Decimal(amount), note: "", date: Date())
-        let money = MoneyFormat.money(Decimal(amount), symbol: settings.currencySymbol)
-        return .result(dialog: IntentDialog(
-            stringLiteral: String(localized: "Logged \(money) on food.")))
+        return .result(dialog: IntentDialog(stringLiteral: dialogText))
     }
 }
 
@@ -38,17 +40,18 @@ struct FoodLeftIntent: AppIntent {
     init() {}
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let worker = StorageWorker.shared
-        let settings = worker.settings()
-        guard let foodId = settings.foodCategoryId, settings.dailyFoodAmount > 0,
-              let plan = FoodMath.plan(balance: worker.balance(of: foodId),
-                                       daily: settings.dailyFoodAmount,
-                                       planEnd: settings.foodPlanEnd) else {
-            return .result(dialog: IntentDialog(
-                stringLiteral: String(localized: "Set a daily food budget in Settings")))
+        let dialogText = await MainActor.run { () -> String in
+            let worker = StorageWorker.shared
+            let settings = worker.settings()
+            guard let foodId = settings.foodCategoryId, settings.dailyFoodAmount > 0,
+                  let plan = FoodMath.plan(balance: worker.balance(of: foodId),
+                                           daily: settings.dailyFoodAmount,
+                                           planEnd: settings.foodPlanEnd) else {
+                return String(localized: "Set a daily food budget in Settings")
+            }
+            let money = MoneyFormat.money(max(0, plan.available), symbol: settings.currencySymbol)
+            return String(localized: "Left for today: \(money)")
         }
-        let money = MoneyFormat.money(max(0, plan.available), symbol: settings.currencySymbol)
-        return .result(dialog: IntentDialog(
-            stringLiteral: String(localized: "Left for today: \(money)")))
+        return .result(dialog: IntentDialog(stringLiteral: dialogText))
     }
 }

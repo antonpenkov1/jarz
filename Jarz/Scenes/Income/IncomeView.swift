@@ -1,10 +1,12 @@
 import SwiftUI
 
+@MainActor
 protocol IncomeDisplayLogic: AnyObject {
     func displayPrepared(viewModel: Income.Prepare.ViewModel)
     func displaySaved(viewModel: Income.Save.ViewModel)
 }
 
+@MainActor
 final class IncomeViewStore: ObservableObject, IncomeDisplayLogic {
     @Published var viewModel: Income.Prepare.ViewModel = .empty
     @Published var salaryText = ""
@@ -39,12 +41,13 @@ final class IncomeViewStore: ObservableObject, IncomeDisplayLogic {
     }
 }
 
+@MainActor
 enum IncomeConfigurator {
     static func makeView() -> IncomeView {
         let store = IncomeViewStore()
         let presenter = IncomePresenter()
         presenter.view = store
-        store.interactor = IncomeInteractor(presenter: presenter)
+        store.interactor = IncomeInteractor(presenter: presenter, worker: .shared)
         return IncomeView(store: store)
     }
 }

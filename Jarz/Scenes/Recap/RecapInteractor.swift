@@ -1,14 +1,16 @@
 import Foundation
 
+@MainActor
 protocol RecapBusinessLogic {
     func load(request: Recap.Load.Request)
 }
 
+@MainActor
 final class RecapInteractor: RecapBusinessLogic {
     private let presenter: RecapPresentationLogic
     private let worker: StorageWorker
 
-    init(presenter: RecapPresentationLogic, worker: StorageWorker = .shared) {
+    init(presenter: RecapPresentationLogic, worker: StorageWorker) {
         self.presenter = presenter
         self.worker = worker
     }

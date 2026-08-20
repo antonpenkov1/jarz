@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 protocol SettingsBusinessLogic {
     func load(request: Settings.Load.Request)
     func saveSettings(request: Settings.SaveSettings.Request)
@@ -10,11 +11,12 @@ protocol SettingsBusinessLogic {
     func moveCategory(request: Settings.MoveCategory.Request)
 }
 
+@MainActor
 final class SettingsInteractor: SettingsBusinessLogic {
     private let presenter: SettingsPresentationLogic
     private let worker: StorageWorker
 
-    init(presenter: SettingsPresentationLogic, worker: StorageWorker = .shared) {
+    init(presenter: SettingsPresentationLogic, worker: StorageWorker) {
         self.presenter = presenter
         self.worker = worker
     }

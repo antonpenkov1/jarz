@@ -1,9 +1,11 @@
 import SwiftUI
 
+@MainActor
 protocol CategoryDetailDisplayLogic: AnyObject {
     func displayDetail(viewModel: CategoryDetail.Load.ViewModel)
 }
 
+@MainActor
 final class CategoryDetailViewStore: ObservableObject, CategoryDetailDisplayLogic {
     @Published var viewModel: CategoryDetail.Load.ViewModel = .empty
     var interactor: CategoryDetailBusinessLogic?
@@ -47,12 +49,13 @@ final class CategoryDetailViewStore: ObservableObject, CategoryDetailDisplayLogi
     }
 }
 
+@MainActor
 enum CategoryDetailConfigurator {
     static func makeView(categoryId: UUID) -> CategoryDetailView {
         let store = CategoryDetailViewStore()
         let presenter = CategoryDetailPresenter()
         presenter.view = store
-        store.interactor = CategoryDetailInteractor(categoryId: categoryId, presenter: presenter)
+        store.interactor = CategoryDetailInteractor(categoryId: categoryId, presenter: presenter, worker: .shared)
         return CategoryDetailView(store: store, categoryId: categoryId)
     }
 }

@@ -1,9 +1,11 @@
 import Foundation
 
+@MainActor
 protocol SettingsPresentationLogic {
     func presentSettings(response: Settings.Load.Response)
 }
 
+@MainActor
 final class SettingsPresenter: SettingsPresentationLogic {
     weak var view: SettingsDisplayLogic?
 
