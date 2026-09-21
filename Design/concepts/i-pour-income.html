@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=430">
+<title>Jarz — Income · Pour</title>
+<style>
+  :root{
+    --paper:#F7F6F2; --card:#FFFFFF; --ink:#171614;
+    --green:#17A05E; --green-hi:#3ECB87; --green-deep:#0E7D49;
+    --amber:#DFA032; --amber-ink:#A9761B;
+    --muted:rgba(23,22,20,.52); --faint:rgba(23,22,20,.34);
+    --line:rgba(23,22,20,.14);
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  html,body{width:430px;height:932px}
+  body{
+    position:fixed;inset:0;overflow:hidden;
+    background:var(--paper);color:var(--ink);font-family:var(--sans);
+  }
+  /* ambient paper glow */
+  body::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(300px 260px at 215px 150px, rgba(23,160,94,.13), rgba(23,160,94,0) 70%),
+      radial-gradient(340px 300px at 215px 430px, rgba(23,160,94,.08), rgba(23,160,94,0) 72%),
+      radial-gradient(280px 160px at 215px 770px, rgba(223,160,50,.06), rgba(223,160,50,0) 75%);
+  }
+
+  /* ---------- status bar ---------- */
+  .status{position:absolute;top:0;left:0;right:0;height:54px;z-index:40;
+    display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 30px 8px 34px}
+  .status .time{font-size:16px;font-weight:600;letter-spacing:.2px;font-family:var(--sans)}
+  .status .right{display:flex;align-items:center;gap:7px}
+
+  /* ---------- header ---------- */
+  .kicker{position:absolute;top:64px;left:0;right:0;text-align:center;z-index:10;
+    font-size:11px;font-weight:600;letter-spacing:3.2px;color:var(--muted);text-transform:uppercase}
+
+  /* ---------- source orb ---------- */
+  .orb{position:absolute;top:94px;left:50%;transform:translateX(-50%);z-index:20;
+    width:182px;height:66px;border-radius:33px;text-align:center;
+    background:linear-gradient(180deg,#2FBF78,#149257);
+    box-shadow:
+      inset 0 1px 2px rgba(255,255,255,.55),
+      inset 0 -6px 14px rgba(10,90,52,.35),
+      0 10px 28px rgba(23,160,94,.38),
+      0 28px 70px rgba(23,160,94,.30);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .orb::after{ /* spout nub feeding the stream */
+    content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+    width:20px;height:12px;border-radius:0 0 10px 10px;
+    background:linear-gradient(180deg,#149257,#0E7D49)}
+  .orb .amt{font-family:var(--serif);font-size:25px;line-height:1;color:#fff;
+    text-shadow:0 1px 2px rgba(9,74,43,.4)}
+  .orb .cap{font-size:10px;letter-spacing:.6px;color:rgba(255,255,255,.82)}
+
+  .leftpour{position:absolute;top:104px;right:24px;text-align:right;z-index:10}
+  .leftpour .l1{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .leftpour .l2{font-family:var(--serif);font-size:18px;color:var(--muted);margin-top:3px}
+
+  /* ---------- scene ---------- */
+  .stream{position:absolute;top:152px;left:0;z-index:15;pointer-events:none}
+
+  .jar{position:absolute;top:235px;left:50%;transform:translateX(-50%);
+    width:232px;height:300px;z-index:5}
+  .rim{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:6;
+    width:150px;height:18px;border-radius:10px;
+    background:linear-gradient(180deg,#FFFFFF,#EFEEE8);
+    border:2px solid var(--line);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.9), 0 2px 4px rgba(23,22,20,.06)}
+  .glass{position:absolute;top:14px;left:0;right:0;bottom:0;overflow:hidden;
+    border-radius:42px 42px 54px 54px;
+    border:2px solid rgba(23,22,20,.16);
+    background:linear-gradient(165deg,rgba(255,255,255,.92),rgba(255,255,255,.45) 45%,rgba(243,242,236,.6));
+    box-shadow:
+      inset 0 2px 10px rgba(255,255,255,.9),
+      inset 0 -10px 24px rgba(23,22,20,.05),
+      0 30px 60px -18px rgba(23,22,20,.20),
+      0 14px 44px rgba(23,160,94,.10)}
+  /* glass highlights */
+  .hl1{position:absolute;left:18px;top:36px;bottom:34px;width:14px;border-radius:10px;
+    background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.08));opacity:.75}
+  .hl2{position:absolute;right:22px;top:60px;bottom:60px;width:4px;border-radius:3px;
+    background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,.05));opacity:.7}
+
+  /* liquid: 65% fill */
+  .liquid{position:absolute;left:2px;right:2px;bottom:2px;height:182px;z-index:1;
+    background:linear-gradient(180deg,#21B46C,#17A05E 42%,#0E7D49);
+    border-radius:0 0 50px 50px}
+  .meniscus{position:absolute;top:-11px;left:-5px;right:-5px;height:26px;border-radius:50%;
+    background:linear-gradient(180deg,#54D194,#21B46C 70%);
+    box-shadow:inset 0 2px 3px rgba(255,255,255,.35)}
+  .sheen{position:absolute;top:-4px;left:14%;width:72%;height:10px;border-radius:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0));opacity:.8}
+  /* radial glow where the stream meets the liquid */
+  .impact{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:3;
+    width:164px;height:74px;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(225,255,238,.95),rgba(126,232,177,.42) 52%,rgba(126,232,177,0) 78%)}
+  .ripple{position:absolute;left:50%;top:99px;transform:translateX(-50%);z-index:3;
+    width:56px;height:13px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.65);border-bottom-color:rgba(255,255,255,.25)}
+  /* rising micro-bubbles */
+  .b{position:absolute;border-radius:50%;background:rgba(255,255,255,.6);z-index:2}
+
+  /* label + ticking counter on the liquid */
+  .fill-label{position:absolute;left:0;right:0;top:136px;z-index:4;text-align:center;color:#fff}
+  .fill-label .name{font-size:11.5px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+    color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(10,84,49,.4)}
+  .fill-label .big{font-family:var(--serif);font-size:40px;line-height:1.15;margin-top:4px;
+    text-shadow:0 1px 3px rgba(10,84,49,.45)}
+  .fill-label .big .tick{display:inline-block;font-size:10px;vertical-align:17px;margin-left:5px;
+    color:#BDF3D6;text-shadow:0 0 6px rgba(189,243,214,.8)}
+  .fill-label .of{font-family:var(--serif);font-size:15px;color:rgba(255,255,255,.62);margin-top:2px}
+
+  /* ---------- hint ---------- */
+  .hint{position:absolute;top:556px;left:0;right:0;text-align:center;z-index:10;
+    font-size:9.5px;font-weight:600;letter-spacing:2.6px;color:var(--faint);text-transform:uppercase}
+
+  /* ---------- jar chips ---------- */
+  .chips{position:absolute;top:586px;left:20px;right:20px;z-index:10;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .chip{position:relative;height:52px;border-radius:16px;padding:9px 12px 8px;
+    background:var(--card);border:1.5px solid var(--line);
+    box-shadow:0 6px 18px rgba(23,22,20,.05)}
+  .chip .nm{font-size:11.5px;font-weight:600;color:rgba(23,22,20,.72);letter-spacing:.2px}
+  .chip .am{font-family:var(--serif);font-size:15px;margin-top:3px;color:var(--ink)}
+  .chip.done{background:linear-gradient(180deg,#FFFFFF,#EDF8F2);
+    border-color:rgba(23,160,94,.32);
+    box-shadow:0 6px 20px rgba(23,160,94,.12)}
+  .chip.empty{border-style:dashed;border-color:rgba(23,22,20,.20);background:rgba(255,255,255,.6)}
+  .chip.empty .am{color:var(--faint)}
+  .chip .badge{position:absolute;top:8px;right:8px;width:16px;height:16px}
+  .chip .check{width:16px;height:16px;border-radius:50%;background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(23,160,94,.4)}
+  .chip .star{filter:drop-shadow(0 1px 3px rgba(223,160,50,.5))}
+  .chip .ring{width:14px;height:14px;border-radius:50%;border:1.5px dashed rgba(23,22,20,.28);margin:1px}
+
+  /* ---------- bottom card ---------- */
+  .sheet{position:absolute;top:708px;left:20px;right:20px;z-index:10;
+    background:var(--card);border-radius:26px;padding:11px;
+    border:1px solid rgba(23,22,20,.06);
+    box-shadow:0 18px 44px rgba(23,22,20,.08)}
+  .suggest{height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:rgba(223,160,50,.10);border:1.5px solid rgba(223,160,50,.38);
+    box-shadow:0 6px 22px rgba(223,160,50,.26), inset 0 1px 0 rgba(255,255,255,.6);
+    color:var(--amber-ink);font-size:13px;font-weight:600;letter-spacing:.2px}
+  .cta{margin-top:9px;height:52px;border-radius:26px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--ink);color:var(--paper);font-size:16px;font-weight:600;letter-spacing:.3px;
+    box-shadow:0 12px 28px rgba(23,22,20,.28)}
+
+  /* ---------- tab bar ---------- */
+  .tabbar{position:absolute;left:50%;transform:translateX(-50%);bottom:26px;z-index:30;
+    width:368px;height:62px;border-radius:31px;background:var(--card);
+    box-shadow:0 14px 40px rgba(23,22,20,.14), 0 2px 8px rgba(23,22,20,.06);
+    display:flex;align-items:center;justify-content:space-around;padding:0 10px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:2px;
+    color:rgba(23,22,20,.5);font-size:10px;font-weight:600;letter-spacing:.2px}
+  .tab .ico{width:46px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+  .tab.active{color:var(--green)}
+  .tab.active .ico{background:rgba(23,160,94,.13);box-shadow:0 4px 14px rgba(23,160,94,.18)}
+
+  .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:40;
+    width:140px;height:5px;border-radius:3px;background:rgba(23,22,20,.9)}
+</style>
+</head>
+<body>
+
+  <!-- status bar -->
+  <div class="status">
+    <div class="time">9:41</div>
+    <div class="right">
+      <svg width="19" height="12" viewBox="0 0 19 12" fill="#171614">
+        <rect x="0" y="7.5" width="3.4" height="4.5" rx="1"/>
+        <rect x="5" y="5" width="3.4" height="7" rx="1"/>
+        <rect x="10" y="2.5" width="3.4" height="9.5" rx="1"/>
+        <rect x="15" y="0" width="3.4" height="12" rx="1"/>
+      </svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none" stroke="#171614" stroke-width="1.7" stroke-linecap="round">
+        <path d="M1.5 4.2a10.4 10.4 0 0 1 14 0"/>
+        <path d="M4 6.9a6.7 6.7 0 0 1 9 0"/>
+        <path d="M6.6 9.5a3 3 0 0 1 3.8 0"/>
+        <circle cx="8.5" cy="10.9" r="1" fill="#171614" stroke="none"/>
+      </svg>
+      <svg width="27" height="13" viewBox="0 0 27 13">
+        <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="rgba(23,22,20,.4)"/>
+        <rect x="2" y="2" width="20" height="9" rx="2.2" fill="#171614"/>
+        <path d="M25 4.5v4a2.2 2.2 0 0 0 0-4Z" fill="rgba(23,22,20,.4)"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- header -->
+  <div class="kicker">Income · 21 Sep</div>
+
+  <!-- source orb -->
+  <div class="orb">
+    <div class="amt">150&#8201;000</div>
+    <div class="cap">salary · drag to pour</div>
+  </div>
+  <div class="leftpour">
+    <div class="l1">left to pour</div>
+    <div class="l2">42&#8201;500</div>
+  </div>
+
+  <!-- pour stream -->
+  <svg class="stream" width="430" height="216" viewBox="0 0 430 216">
+    <defs>
+      <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8FE8BA"/>
+        <stop offset=".45" stop-color="#3ECB87"/>
+        <stop offset="1" stop-color="#17A05E"/>
+      </linearGradient>
+      <filter id="soft" x="-300%" y="-40%" width="700%" height="180%">
+        <feGaussianBlur stdDeviation="7"/>
+      </filter>
+    </defs>
+    <!-- glow halo -->
+    <path d="M202 8 L228 8 L221 210 L209 210 Z" fill="#2FBF78" opacity=".5" filter="url(#soft)"/>
+    <!-- tapering core: 15px wide at the spout, 7px at the surface -->
+    <path d="M207.5 4 C207.5 62 210.6 142 211.5 210 L218.5 210 C219.4 142 222.5 62 222.5 4 Z" fill="url(#beam)"/>
+    <!-- inner light thread -->
+    <path d="M213.2 8 C213.2 72 214.1 150 214.5 206 L215.9 206 C216.2 150 216.8 72 216.8 8 Z" fill="#EAFFF3" opacity=".85"/>
+    <!-- droplets alongside -->
+    <ellipse cx="199.5" cy="74" rx="2.7" ry="3.4" fill="#3ECB87" opacity=".9"/>
+    <ellipse cx="232.5" cy="112" rx="2.5" ry="3.6" fill="#2FBF78" opacity=".85"/>
+    <circle cx="197" cy="151" r="2.1" fill="#3ECB87" opacity=".8"/>
+    <ellipse cx="230.5" cy="181" rx="2.2" ry="3.3" fill="#17A05E" opacity=".85"/>
+  </svg>
+
+  <!-- the receiving jar -->
+  <div class="jar">
+    <div class="rim"></div>
+    <div class="glass">
+      <div class="liquid">
+        <div class="meniscus"></div>
+        <div class="sheen"></div>
+        <!-- micro-bubbles -->
+        <div class="b" style="left:96px;top:26px;width:5px;height:5px;opacity:.5"></div>
+        <div class="b" style="left:118px;top:14px;width:4px;height:4px;opacity:.55"></div>
+        <div class="b" style="left:108px;top:48px;width:6px;height:6px;opacity:.35"></div>
+        <div class="b" style="left:130px;top:66px;width:4px;height:4px;opacity:.3"></div>
+        <div class="b" style="left:88px;top:82px;width:3px;height:3px;opacity:.3"></div>
+        <div class="b" style="left:142px;top:34px;width:3px;height:3px;opacity:.45"></div>
+        <div class="b" style="left:70px;top:56px;width:4px;height:4px;opacity:.25"></div>
+        <div class="b" style="left:120px;top:104px;width:5px;height:5px;opacity:.22"></div>
+      </div>
+      <div class="impact"></div>
+      <div class="ripple"></div>
+      <div class="hl1"></div>
+      <div class="hl2"></div>
+      <div class="fill-label">
+        <div class="name">Apartment</div>
+        <div class="big">26&#8201;000<span class="tick">&#9650;</span></div>
+        <div class="of">/ 40&#8201;000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sound & haptics hint -->
+  <div class="hint">Tilt to pour faster · Haptics follow the flow</div>
+
+  <!-- other jars -->
+  <div class="chips">
+    <div class="chip done">
+      <div class="nm">Food</div><div class="am">31&#8201;000</div>
+      <div class="badge"><div class="check"><svg width="9" height="8" viewBox="0 0 9 8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.2 3.4 6.6 8 1.4"/></svg></div></div>
+    </div>
+    <div class="chip done">
+      <div class="nm">Bills</div><div class="am">16&#8201;000</div>
+      <div class="badge"><div class="check"><svg width="9" height="8" viewBox="0 0 9 8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.2 3.4 6.6 8 1.4"/></svg></div></div>
+    </div>
+    <div class="chip empty">
+      <div class="nm">Gifts</div><div class="am">—</div>
+      <div class="badge"><div class="ring"></div></div>
+    </div>
+    <div class="chip empty">
+      <div class="nm">Trips</div><div class="am">—</div>
+      <div class="badge"><svg class="star" width="14" height="14" viewBox="0 0 14 14" fill="#DFA032"><path d="M7 .8l1.8 3.7 4 .6-2.9 2.9.7 4L7 10.1 3.4 12l.7-4L1.2 5.1l4-.6L7 .8Z"/></svg></div>
+    </div>
+    <div class="chip done">
+      <div class="nm">Sport</div><div class="am">34&#8201;500</div>
+      <div class="badge"><div class="check"><svg width="9" height="8" viewBox="0 0 9 8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4.2 3.4 6.6 8 1.4"/></svg></div></div>
+    </div>
+    <div class="chip empty">
+      <div class="nm">Savings</div><div class="am">—</div>
+      <div class="badge"><svg class="star" width="14" height="14" viewBox="0 0 14 14" fill="#DFA032"><path d="M7 .8l1.8 3.7 4 .6-2.9 2.9.7 4L7 10.1 3.4 12l.7-4L1.2 5.1l4-.6L7 .8Z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- bottom card -->
+  <div class="sheet">
+    <div class="suggest">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="#DFA032"><path d="M7 .8l1.8 3.7 4 .6-2.9 2.9.7 4L7 10.1 3.4 12l.7-4L1.2 5.1l4-.6L7 .8Z"/></svg>
+      Auto-split remaining&nbsp;&nbsp;&#8594;&nbsp;&nbsp;Savings
+    </div>
+    <div class="cta">Finish pouring</div>
+  </div>
+
+  <!-- tab bar -->
+  <nav class="tabbar">
+    <div class="tab">
+      <div class="ico"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.3 12 4.8l8 6.5"/><path d="M6.4 10.4V19h11.2v-8.6"/></svg></div>
+      Home
+    </div>
+    <div class="tab active">
+      <div class="ico"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.3 4.2h7.4"/><path d="M9.2 4.2v2.6M14.8 4.2v2.6"/><path d="M9.2 6.8C7.4 7.8 6.2 9.3 6.2 11.4v5.4a2.6 2.6 0 0 0 2.6 2.6h6.4a2.6 2.6 0 0 0 2.6-2.6v-5.4c0-2.1-1.2-3.6-3-4.6"/><path d="M6.4 13.4h11.2"/></svg></div>
+      Income
+    </div>
+    <div class="tab">
+      <div class="ico"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 5.2v4.6h4.6"/><path d="M4.9 9.8a7.6 7.6 0 1 1-.7 3.4"/></svg></div>
+      Revision
+    </div>
+    <div class="tab">
+      <div class="ico"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7.2h16M4 12h16M4 16.8h16"/><circle cx="9.4" cy="7.2" r="2" fill="#fff"/><circle cx="15" cy="12" r="2" fill="#fff"/><circle cx="7.6" cy="16.8" r="2" fill="#fff"/></svg></div>
+      Settings
+    </div>
+  </nav>
+
+  <div class="homebar"></div>
+
+</body>
+</html>
