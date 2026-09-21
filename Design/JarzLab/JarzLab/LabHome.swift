@@ -31,18 +31,17 @@ struct JarModel: Identifiable {
 // MARK: - Root
 
 struct LabHome: View {
+    // Carousel = goal jars only; the list below carries everything else.
     private let jars: [JarModel] = [
         .init(name: "Trips", amount: "25 000", fill: 0.25, isGoal: true, goalTotal: "100 000", paceDate: "≈ 8 Jun"),
         .init(name: "Savings", amount: "12 000", fill: 0.20, isGoal: true, goalTotal: "60 000", paceDate: "≈ 14 Mar"),
-        .init(name: "Sport", amount: "3 500", fill: 0.85, isGoal: false),
-        .init(name: "Gifts", amount: "3 000", fill: 0.25, isGoal: false),
     ]
 
     private let listJars: [JarModel] = [
         .init(name: "Apartment", amount: "40 000", fill: 0.95, isGoal: false),
         .init(name: "Bills", amount: "16 000", fill: 0.60, isGoal: false),
-        .init(name: "Trips", amount: "25 000", fill: 0.25, isGoal: true, goalTotal: "100 000", paceDate: "≈ 8 Jun"),
-        .init(name: "Savings", amount: "12 000", fill: 0.20, isGoal: true, goalTotal: "60 000", paceDate: "≈ 14 Mar"),
+        .init(name: "Gifts", amount: "3 000", fill: 0.25, isGoal: false),
+        .init(name: "Sport", amount: "3 500", fill: 0.85, isGoal: false),
     ]
 
     @State private var focusedCard: Int? = 0
@@ -57,9 +56,9 @@ struct LabHome: View {
                 VStack(alignment: .leading, spacing: 22) {
                     header
                     FoodHeroCard(appeared: appeared)
-                    SectionCaps("Jars · swipe")
+                    SectionCaps("Goals")
                     carousel
-                    SectionCaps("Jars · list")
+                    SectionCaps("Jars")
                     listCard
                     footer
                 }
@@ -417,27 +416,16 @@ struct GlowBarRow: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Lab.hairline.opacity(0.55)).frame(height: 5)
+                    // Just the glowing fill — no end bead, it isn't a slider.
                     Capsule()
                         .fill(LinearGradient(colors: [deep, tint], startPoint: .leading, endPoint: .trailing))
                         .frame(width: max(10, geo.size.width * (appeared ? jar.fill : 0.02)), height: 5)
                         .shadow(color: tint.opacity(0.65), radius: 5)
                         .shadow(color: tint.opacity(0.30), radius: 12)
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 11, height: 11)
-                        .overlay(Circle().stroke(tint, lineWidth: 3))
-                        .shadow(color: tint.opacity(0.9), radius: 5)
-                        .offset(x: max(10, geo.size.width * (appeared ? jar.fill : 0.02)) - 5.5)
-                    if jar.isGoal, let pace = jar.paceDate {
-                        Text(pace)
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(deep)
-                            .offset(x: geo.size.width - 44, y: -16)
-                    }
                 }
                 .animation(.spring(response: 1.1, dampingFraction: 0.8).delay(delay), value: appeared)
             }
-            .frame(height: 12)
+            .frame(height: 8)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
