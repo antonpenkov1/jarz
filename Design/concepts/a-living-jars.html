@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Jarz — Living Jars</title>
+<style>
+  :root{
+    --paper:#F7F6F2;
+    --ink:#171614;
+    --muted:#807C70;
+    --faint:#A8A498;
+    --green:#1A6B4D;
+    --green-hi:#2F8B66;
+    --green-lo:#12513B;
+    --red:#B83832;
+    --hairline:rgba(23,22,20,.10);
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+  html{background:#E7E5DF;}
+  body{
+    width:430px;height:932px;margin:0 auto;overflow:hidden;position:relative;
+    background:
+      radial-gradient(140% 60% at 50% -8%, rgba(255,255,255,.85), rgba(255,255,255,0) 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    user-select:none;
+  }
+
+  /* ————— Status bar & Dynamic Island ————— */
+  .island{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:125px;height:37px;border-radius:20px;background:#0A0A0A;z-index:50;
+  }
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:56px;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 36px 0 44px;
+  }
+  .sb-time{font-size:16px;font-weight:600;letter-spacing:.01em;}
+  .sb-right{display:flex;align-items:center;gap:7px;}
+  .sig{display:flex;align-items:flex-end;gap:1.5px;height:11px;}
+  .sig i{display:block;width:3px;border-radius:1px;background:var(--ink);}
+  .sig i:nth-child(1){height:4px;}.sig i:nth-child(2){height:6px;}
+  .sig i:nth-child(3){height:8.5px;}.sig i:nth-child(4){height:11px;}
+  .batt{position:relative;width:25px;height:12.5px;border:1.1px solid rgba(23,22,20,.4);border-radius:4px;}
+  .batt::before{content:"";position:absolute;left:2px;top:2px;bottom:2px;width:16px;border-radius:2px;background:var(--ink);}
+  .batt::after{content:"";position:absolute;right:-3.6px;top:3.5px;width:1.8px;height:5px;border-radius:0 2px 2px 0;background:rgba(23,22,20,.4);}
+
+  /* ————— Layout ————— */
+  main{padding:70px 24px 0;}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;margin-top:8px;}
+  .brand{font-family:var(--serif);font-size:13px;font-weight:700;letter-spacing:.34em;text-indent:.34em;color:var(--ink);padding-top:3px;}
+  .bal{text-align:right;}
+  .bal-cap{display:block;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:2px;}
+  .bal-num{font-family:var(--serif);font-size:16px;color:var(--ink);}
+
+  /* ————— Jars (shared) ————— */
+  .jar{position:relative;}
+  .lid{
+    margin:0 auto;border-radius:5px;
+    background:linear-gradient(180deg,#F2EFE7,#DCD6C8 55%,#CBC4B2);
+    border:1px solid rgba(23,22,20,.16);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1.5px 2px rgba(23,22,20,.14);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(23,22,20,0) 0 4px, rgba(23,22,20,.055) 4px 5px),
+      linear-gradient(180deg,#F2EFE7,#DCD6C8 55%,#CBC4B2);
+  }
+  .vessel{
+    position:relative;margin-top:2px;overflow:hidden;
+    background:
+      linear-gradient(100deg, rgba(255,255,255,.55) 0%, rgba(244,242,236,.18) 34%, rgba(255,255,255,.04) 55%, rgba(228,225,215,.42) 100%);
+    border:1px solid rgba(23,22,20,.13);
+    box-shadow:
+      inset 0 2px 6px rgba(255,255,255,.75),
+      inset 0 -5px 10px rgba(23,22,20,.05),
+      0 14px 20px -12px rgba(23,22,20,.28),
+      0 3px 5px -2px rgba(23,22,20,.14);
+  }
+  .vessel::after{ /* shoulder sheen */
+    content:"";position:absolute;top:2px;right:8%;width:26%;height:14%;
+    border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,255,255,.6), rgba(255,255,255,0));
+    pointer-events:none;
+  }
+  .gloss{
+    position:absolute;top:7%;bottom:9%;left:9%;width:11%;
+    border-radius:999px;z-index:3;
+    background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.28) 60%, rgba(255,255,255,.08));
+    filter:blur(.6px);
+  }
+  .gloss2{
+    position:absolute;top:12%;bottom:20%;right:11%;width:4.5%;
+    border-radius:999px;z-index:3;
+    background:linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,.05));
+    filter:blur(.6px);
+  }
+  .liquid{
+    position:absolute;left:3px;right:3px;bottom:3px;z-index:1;
+    background:
+      radial-gradient(130% 55% at 30% 12%, rgba(255,255,255,.20), rgba(255,255,255,0) 58%),
+      linear-gradient(180deg, var(--green-hi) 0%, var(--green) 46%, var(--green-lo) 100%);
+    box-shadow:inset 0 -8px 14px rgba(0,0,0,.18), inset 0 4px 6px rgba(255,255,255,.12);
+  }
+  .liquid::before{ /* meniscus */
+    content:"";position:absolute;left:-1px;right:-1px;top:-4.5px;height:9px;
+    border-radius:50%;
+    background:linear-gradient(180deg,#57A981,#2A7D5B 70%);
+    box-shadow:inset 0 1.5px 2px rgba(255,255,255,.4);
+  }
+  .liquid::after{ /* surface glint */
+    content:"";position:absolute;left:18%;top:-2.5px;width:30%;height:3.5px;
+    border-radius:50%;background:rgba(255,255,255,.38);filter:blur(.6px);
+  }
+  .tag{ /* paper label */
+    position:absolute;left:50%;transform:translateX(-50%);z-index:4;
+    background:linear-gradient(180deg,#FFFEFA,#FAF7EE);
+    border:1px solid rgba(23,22,20,.12);
+    border-radius:3px;
+    font-family:var(--serif);text-transform:uppercase;
+    color:#403D33;text-align:center;white-space:nowrap;
+    box-shadow:0 1.5px 2.5px rgba(23,22,20,.14), inset 0 0 0 2.5px rgba(255,255,255,.6);
+  }
+
+  /* hero jar sizes */
+  .jar-hero{width:150px;}
+  .jar-hero .lid{width:96px;height:15px;border-radius:6px;}
+  .jar-hero .vessel{height:186px;border-radius:26px 26px 22px 22px;}
+  .jar-hero .liquid{left:4px;right:4px;bottom:4px;border-radius:8px 8px 18px 18px;}
+  .jar-hero .tag{top:74px;padding:6px 13px;font-size:12.5px;letter-spacing:.22em;text-indent:.22em;}
+
+  /* small jar sizes */
+  .jar-sm{width:94px;margin:0 auto;}
+  .jar-sm .lid{width:60px;height:11px;}
+  .jar-sm .vessel{height:112px;border-radius:18px 18px 15px 15px;}
+  .jar-sm .liquid{border-radius:6px 6px 12px 12px;}
+  .jar-sm .tag{top:42px;padding:3.5px 8px;font-size:9px;letter-spacing:.14em;text-indent:.14em;}
+
+  /* ————— Hero section ————— */
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;margin-top:22px;padding:0 4px;}
+  .hero-info{padding-bottom:14px;}
+  .eyebrow{font-size:10px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--green);margin-bottom:10px;}
+  .big{font-family:var(--serif);font-size:66px;line-height:1;letter-spacing:-.01em;color:var(--ink);}
+  .cap{font-size:13px;color:var(--muted);margin-top:10px;letter-spacing:.01em;}
+  .sub{font-size:12.5px;color:var(--muted);margin-top:16px;}
+  .sub .plus{color:var(--green);font-weight:600;}
+  .sub .until{border-bottom:1.5px dotted rgba(26,107,77,.55);padding-bottom:1px;color:#4E4A3F;}
+
+  /* ————— Shelf ————— */
+  .shelf{position:relative;margin-top:30px;}
+  .shelf + .shelf{margin-top:24px;}
+  .row{display:flex;position:relative;z-index:1;}
+  .slot{flex:1;text-align:center;}
+  .board{
+    position:absolute;left:2px;right:2px;top:126px;height:7px;border-radius:4px;z-index:0;
+    background:linear-gradient(180deg,#F0EEE7,#E1DDD1);
+    border:1px solid rgba(23,22,20,.07);
+    box-shadow:0 7px 9px -5px rgba(23,22,20,.20), inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  .amt{font-family:var(--serif);font-size:17px;color:var(--ink);margin-top:14px;}
+  .goal{margin-top:6px;line-height:1.2;}
+  .goal-frac{font-family:var(--serif);font-size:10px;color:var(--muted);letter-spacing:.02em;}
+  .goal-line{margin-top:4px;}
+  .pill{
+    display:inline-flex;align-items:center;gap:2px;white-space:nowrap;
+    padding:2px 7px 2.5px;border-radius:999px;
+    background:rgba(26,107,77,.10);
+    color:var(--green);font-size:9.5px;font-weight:700;letter-spacing:.02em;
+    font-family:var(--serif);
+  }
+  .pill .arr{font-family:var(--sans);font-size:9px;font-weight:700;transform:translateY(-.5px);}
+  .pace{display:block;margin-top:3px;font-size:8.5px;color:var(--faint);letter-spacing:.04em;white-space:nowrap;}
+
+  /* ————— Total ————— */
+  .total{
+    position:absolute;left:24px;right:24px;bottom:114px;text-align:center;
+  }
+  .total::before{
+    content:"";display:block;width:56px;height:1px;margin:0 auto 12px;
+    background:linear-gradient(90deg,rgba(23,22,20,0),rgba(23,22,20,.22),rgba(23,22,20,0));
+  }
+  .total-cap{font-size:9.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);}
+  .total-num{font-family:var(--serif);font-size:16px;color:var(--ink);margin-left:9px;}
+
+  /* ————— Tab bar ————— */
+  .tabbar{
+    position:absolute;left:26px;right:26px;bottom:32px;height:64px;z-index:60;
+    display:flex;align-items:stretch;
+    background:rgba(255,255,253,.88);
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+    border:1px solid rgba(23,22,20,.07);
+    border-radius:32px;
+    box-shadow:0 18px 32px -14px rgba(23,22,20,.30), 0 3px 8px -4px rgba(23,22,20,.10);
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.5px;
+    color:#8E8A7D;
+  }
+  .tab svg{display:block;}
+  .tab span{font-size:9.5px;font-weight:600;letter-spacing:.03em;}
+  .tab.active{color:var(--green);}
+  .homedot{
+    position:absolute;left:50%;bottom:9px;transform:translateX(-50%);
+    width:142px;height:5px;border-radius:3px;background:rgba(23,22,20,.88);z-index:70;
+  }
+</style>
+</head>
+<body>
+
+  <div class="island"></div>
+  <div class="statusbar">
+    <div class="sb-time">9:41</div>
+    <div class="sb-right">
+      <div class="sig"><i></i><i></i><i></i><i></i></div>
+      <svg width="17" height="13" viewBox="0 0 17 13" fill="none" aria-hidden="true">
+        <path d="M1.3 4.6 A10.4 10.4 0 0 1 15.7 4.6" stroke="#171614" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M4.2 7.6 A6.3 6.3 0 0 1 12.8 7.6" stroke="#171614" stroke-width="1.9" stroke-linecap="round"/>
+        <circle cx="8.5" cy="10.9" r="1.75" fill="#171614"/>
+      </svg>
+      <div class="batt"></div>
+    </div>
+  </div>
+
+  <main>
+    <header class="top">
+      <div class="brand">JARZ</div>
+      <div class="bal">
+        <span class="bal-cap">Balance</span>
+        <span class="bal-num">30 350 RSD</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-info">
+        <div class="eyebrow">Food</div>
+        <div class="big">1 350</div>
+        <div class="cap">RSD left for today, 21 Sep</div>
+        <div class="sub"><span class="plus">+27 days</span> &nbsp;·&nbsp; <span class="until">until 18 Oct</span></div>
+      </div>
+      <div class="jar jar-hero">
+        <div class="lid"></div>
+        <div class="vessel">
+          <div class="liquid" style="height:85%"></div>
+          <div class="gloss"></div>
+          <div class="gloss2"></div>
+          <div class="tag">Food</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shelf">
+      <div class="board"></div>
+      <div class="row">
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:94%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Apartment</div>
+            </div>
+          </div>
+          <div class="amt">40 000</div>
+        </div>
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:60%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Bills</div>
+            </div>
+          </div>
+          <div class="amt">16 000</div>
+        </div>
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:20%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Gifts</div>
+            </div>
+          </div>
+          <div class="amt">3 000</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shelf">
+      <div class="board"></div>
+      <div class="row">
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:25%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Trips</div>
+            </div>
+          </div>
+          <div class="amt">25 000</div>
+          <div class="goal">
+            <div class="goal-frac">25 000 / 100 000</div>
+            <div class="goal-line">
+              <span class="pill"><span class="arr">↗</span>&thinsp;goal ≈ 8 Jun</span>
+            </div>
+            <span class="pace">at your pace</span>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:55%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Sport</div>
+            </div>
+          </div>
+          <div class="amt">3 500</div>
+        </div>
+        <div class="slot">
+          <div class="jar jar-sm">
+            <div class="lid"></div>
+            <div class="vessel">
+              <div class="liquid" style="height:20%"></div>
+              <div class="gloss"></div><div class="gloss2"></div>
+              <div class="tag">Savings</div>
+            </div>
+          </div>
+          <div class="amt">12 000</div>
+          <div class="goal">
+            <div class="goal-frac">12 000 / 60 000</div>
+            <div class="goal-line">
+              <span class="pill"><span class="arr">↗</span>&thinsp;goal ≈ 14 Mar</span>
+            </div>
+            <span class="pace">at your pace</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="total">
+    <span class="total-cap">Total planned</span><span class="total-num">128 350 RSD</span>
+  </div>
+
+  <nav class="tabbar">
+    <div class="tab active">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.2 10.6 12 3.6l8.8 7v8.4a1.6 1.6 0 0 1-1.6 1.6h-4.4v-5.8h-5.6v5.8H4.8a1.6 1.6 0 0 1-1.6-1.6z"/>
+      </svg>
+      <span>Home</span>
+    </div>
+    <div class="tab">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 14.5v3.7a2.3 2.3 0 0 0 2.3 2.3h11.4a2.3 2.3 0 0 0 2.3-2.3v-3.7"/>
+        <path d="M12 3.4v10.2M8.2 10l3.8 3.8L15.8 10"/>
+      </svg>
+      <span>Income</span>
+    </div>
+    <div class="tab">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.7 5.2v4h4"/>
+        <path d="M4.9 9.2a7.6 7.6 0 1 1-.9 4.2"/>
+        <path d="M12 8.6v3.9l2.7 1.6"/>
+      </svg>
+      <span>Revision</span>
+    </div>
+    <div class="tab">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6.5h7.2M16.6 6.5H20M4 12h1.9M11.3 12H20M4 17.5h9.4M18.8 17.5H20"/>
+        <circle cx="14" cy="6.5" r="2.4" fill="#F7F6F2"/>
+        <circle cx="8.6" cy="12" r="2.4" fill="#F7F6F2"/>
+        <circle cx="16.2" cy="17.5" r="2.4" fill="#F7F6F2"/>
+      </svg>
+      <span>Settings</span>
+    </div>
+  </nav>
+  <div class="homedot"></div>
+
+</body>
+</html>

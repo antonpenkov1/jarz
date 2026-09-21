@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>JARZ — Ink &amp; Craft</title>
+<style>
+  :root{
+    --paper:#F6F2E9;
+    --ink:#1F1C17;
+    --green:#2E6B4F;
+    --red:#A6382E;
+    --mustard:#D9A441;
+    --hand:'Bradley Hand','Marker Felt','Segoe Print','Comic Sans MS',cursive;
+    --serif:Georgia,'Times New Roman',serif;
+    --ui:-apple-system,'SF Pro Text','Helvetica Neue',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:430px;height:932px;}
+  body{
+    position:relative;
+    width:430px;height:932px;
+    overflow:hidden;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ---------- paper grain ---------- */
+  .grain{
+    position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;z-index:50;
+    opacity:.055;mix-blend-mode:multiply;
+  }
+  .vignette{
+    position:absolute;inset:0;pointer-events:none;z-index:49;
+    background:
+      radial-gradient(ellipse 140% 110% at 50% 40%, rgba(0,0,0,0) 62%, rgba(90,70,40,.10) 100%),
+      repeating-linear-gradient(0deg, rgba(120,100,60,.014) 0 2px, rgba(0,0,0,0) 2px 5px);
+  }
+
+  /* ---------- status bar ---------- */
+  .statusbar{
+    height:54px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 30px 6px 36px;position:relative;z-index:5;
+  }
+  .statusbar .time{font-family:var(--ui);font-weight:600;font-size:16px;letter-spacing:.2px;}
+  .statusbar .icons{display:flex;align-items:center;gap:7px;}
+
+  /* ---------- header ---------- */
+  .header{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    padding:8px 24px 0 24px;position:relative;z-index:5;
+  }
+  .stamp{
+    position:relative;display:inline-block;
+    transform:rotate(-3deg);
+    padding:7px 16px 8px;
+  }
+  .stamp svg{position:absolute;inset:0;width:100%;height:100%;}
+  .stamp .word{
+    font-family:var(--serif);font-weight:700;font-size:27px;letter-spacing:7px;
+    color:var(--ink);opacity:.92;
+    text-transform:uppercase;
+    /* faded ink patches, like a real rubber stamp */
+    background:linear-gradient(105deg, var(--ink) 30%, rgba(31,28,23,.55) 45%, var(--ink) 60%, rgba(31,28,23,.7) 82%, var(--ink));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .tagline{
+    font-family:var(--hand);font-size:14px;color:var(--ink);opacity:.62;
+    transform:rotate(-2deg);margin-top:14px;text-align:right;line-height:1.15;
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    display:flex;align-items:flex-start;gap:6px;
+    padding:10px 18px 0 22px;position:relative;z-index:5;
+  }
+  .hero .jar{flex:0 0 auto;}
+  .hero .facts{flex:1;padding-top:26px;position:relative;}
+  .bignum{
+    position:relative;display:inline-block;
+    font-family:var(--serif);font-size:62px;font-weight:700;line-height:1;
+    letter-spacing:1px;color:var(--ink);
+    padding:4px 12px 6px 10px;margin-left:-4px;
+  }
+  .bignum .swipe{position:absolute;inset:-4px -8px -6px -10px;width:calc(100% + 18px);height:calc(100% + 10px);z-index:-1;}
+  .caption{
+    font-family:var(--serif);font-style:italic;font-size:14.5px;color:var(--ink);
+    opacity:.72;margin-top:8px;letter-spacing:.2px;
+  }
+  .note{
+    position:relative;margin-top:16px;padding-left:2px;
+    font-family:var(--hand);font-size:17px;color:var(--green);
+    transform:rotate(-2.4deg);line-height:1.2;
+  }
+  .note .arrow{position:absolute;left:6px;top:26px;}
+
+  /* ---------- shelf ---------- */
+  .shelf-section{padding:6px 0 0;position:relative;z-index:5;}
+  .section-label{
+    font-family:var(--hand);font-size:15px;color:var(--ink);opacity:.6;
+    padding:0 26px;transform:rotate(-1.2deg);
+  }
+  .shelf{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    padding:6px 26px 0;
+  }
+  .shelf .slot{width:88px;text-align:center;}
+  .shelf .slot .jarname{
+    font-family:var(--hand);font-size:14.5px;line-height:1;margin-top:5px;color:var(--ink);
+  }
+  .shelf .slot .jaramount{
+    font-family:var(--serif);font-size:14px;margin-top:3px;color:var(--ink);opacity:.85;
+  }
+  .shelfline{display:block;margin:-52px 0 0;position:relative;z-index:-1;}
+  .shelf .slot:nth-child(1){transform:rotate(-1deg);}
+  .shelf .slot:nth-child(2){transform:rotate(.8deg) translateY(2px);}
+  .shelf .slot:nth-child(3){transform:rotate(-.6deg);}
+  .shelf .slot:nth-child(4){transform:rotate(1.1deg) translateY(1px);}
+
+  /* ---------- goals ---------- */
+  .goals{padding:56px 26px 0;position:relative;z-index:5;}
+  .coffeering{position:absolute;right:28px;bottom:158px;z-index:1;opacity:.5;transform:rotate(-8deg);}
+  .goal{display:flex;align-items:center;margin-top:10px;}
+  .goal:first-of-type{margin-top:6px;}
+  .goal .left{flex:1 1 auto;}
+  .goal .titlerow{display:flex;align-items:baseline;gap:10px;}
+  .goal .gname{font-family:var(--hand);font-size:19px;color:var(--ink);}
+  .goal .gnums{font-family:var(--serif);font-size:14.5px;color:var(--ink);opacity:.8;}
+  .goal .bar{display:block;margin-top:5px;}
+  .circled{
+    position:relative;flex:0 0 auto;margin-left:10px;
+    font-family:var(--hand);font-size:13.5px;color:var(--red);
+    padding:8px 12px;white-space:nowrap;line-height:1.15;text-align:center;
+  }
+  .circled svg{position:absolute;inset:-2px -4px;width:calc(100% + 8px);height:calc(100% + 4px);}
+  .goal:nth-of-type(1) .circled{transform:rotate(2deg);}
+  .goal:nth-of-type(2) .circled{transform:rotate(-2.2deg);}
+
+  /* ---------- footer ---------- */
+  .footer{
+    position:absolute;left:0;right:0;bottom:96px;
+    text-align:center;z-index:5;
+  }
+  .footer .total{
+    position:relative;display:inline-block;
+    font-family:var(--serif);font-style:italic;font-size:16.5px;color:var(--ink);
+    padding:0 6px 10px;transform:rotate(-.8deg);
+  }
+  .footer .total b{font-style:normal;font-weight:700;letter-spacing:.4px;}
+  .footer .scribble{position:absolute;left:-4px;right:-8px;bottom:-4px;width:calc(100% + 12px);height:18px;}
+
+  /* ---------- tab bar ---------- */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;height:84px;
+    background:rgba(246,242,233,.96);z-index:40;
+    display:flex;justify-content:space-around;align-items:flex-start;
+    padding:12px 14px 0;
+  }
+  .tabbar .rule{position:absolute;top:-6px;left:0;width:430px;height:12px;}
+  .tab{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;
+    width:78px;color:var(--ink);opacity:.42;
+  }
+  .tab.active{opacity:1;}
+  .tab .swipe{position:absolute;top:-5px;left:14px;width:50px;height:38px;z-index:-1;}
+  .tab .tlabel{font-family:var(--hand);font-size:11.5px;line-height:1;}
+  .tab.active .tlabel{transform:rotate(-2deg);}
+  .homedash{
+    position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+    width:140px;height:5px;border-radius:3px;background:var(--ink);opacity:.28;z-index:41;
+  }
+</style>
+</head>
+<body>
+
+  <!-- paper grain (SVG turbulence) -->
+  <svg class="grain" xmlns="http://www.w3.org/2000/svg">
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#paperNoise)"/>
+  </svg>
+  <div class="vignette"></div>
+
+  <!-- ============ STATUS BAR ============ -->
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <span class="icons">
+      <!-- signal -->
+      <svg width="19" height="13" viewBox="0 0 19 13"><g fill="#1F1C17"><rect x="0" y="8.5" width="3.4" height="4.5" rx="1"/><rect x="5" y="6" width="3.4" height="7" rx="1"/><rect x="10" y="3.2" width="3.4" height="9.8" rx="1"/><rect x="15" y="0.5" width="3.4" height="12.5" rx="1"/></g></svg>
+      <!-- wifi -->
+      <svg width="17" height="13" viewBox="0 0 17 13" fill="none" stroke="#1F1C17" stroke-width="1.9" stroke-linecap="round"><path d="M1.4,4.4 Q8.5,-1.6 15.6,4.4"/><path d="M4.1,7.3 Q8.5,3.6 12.9,7.3"/><path d="M6.9,10.1 Q8.5,8.8 10.1,10.1"/></svg>
+      <!-- battery -->
+      <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.7" y="0.7" width="22" height="11.6" rx="3.4" fill="none" stroke="#1F1C17" stroke-opacity=".4" stroke-width="1.1"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="2" fill="#1F1C17"/><path d="M24.3,4.2 Q26.3,5.2 26.3,6.5 Q26.3,7.8 24.3,8.8 Z" fill="#1F1C17" fill-opacity=".4"/></svg>
+    </span>
+  </div>
+
+  <!-- ============ HEADER ============ -->
+  <div class="header">
+    <span class="stamp">
+      <svg viewBox="0 0 148 46" preserveAspectRatio="none" fill="none" stroke="#1F1C17" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6,9 Q5,4 12,4 L98,2.6 Q140,2.4 143,6 L144.5,36 Q145,42 137,42 L14,43.4 Q5.5,43.5 5.4,37 L6,9 Z" opacity=".85"/>
+        <path d="M9,12 L8.4,35" stroke-width="1.1" opacity=".35"/>
+        <path d="M139,10 L140,32" stroke-width="1.1" opacity=".3"/>
+      </svg>
+      <span class="word">Jarz</span>
+    </span>
+    <div class="tagline">my money,<br>jar by jar</div>
+  </div>
+
+  <!-- ============ HERO ============ -->
+  <div class="hero">
+    <!-- hand-drawn FOOD jar, brush-filled ~85% -->
+    <svg class="jar" width="176" height="216" viewBox="0 0 170 210" fill="none">
+      <defs>
+        <clipPath id="jarClip">
+          <path d="M36,64 Q52,50 85,50 Q118,50 134,65 L134,178 Q133,194 116,195 L54,195 Q37,194 36,178 Z"/>
+        </clipPath>
+      </defs>
+      <!-- ink brush fill (organic edge, 85%) -->
+      <g clip-path="url(#jarClip)">
+        <path d="M30,74 Q48,62 66,72 Q86,82 106,67 Q122,56 142,71 L142,210 L30,210 Z" fill="#2E6B4F"/>
+        <path d="M30,87 Q60,75 88,85 Q116,95 142,83 L142,210 L30,210 Z" fill="#2E6B4F" opacity=".5"/>
+        <path d="M40,104 Q70,96 96,106 Q120,114 138,106 L138,210 L40,210 Z" fill="#245741" opacity=".35"/>
+        <!-- brush streaks -->
+        <path d="M48,86 q22,-9 42,-2" stroke="#F6F2E9" stroke-width="2" stroke-linecap="round" opacity=".16"/>
+        <path d="M62,100 q30,-8 54,0" stroke="#F6F2E9" stroke-width="1.6" stroke-linecap="round" opacity=".1"/>
+      </g>
+      <!-- paint drip -->
+      <path d="M111,70 q4,11 1.5,22 q-1,6 -3,2 q-2,-10 -1,-22" fill="#2E6B4F"/>
+      <!-- jar label -->
+      <text x="85" y="152" text-anchor="middle" font-family="Bradley Hand, Marker Felt, cursive" font-size="30" letter-spacing="3" fill="#F6F2E9" transform="rotate(-2 85 152)">FOOD</text>
+      <!-- lid, wobbly -->
+      <path d="M46,14 Q47,8.5 54,8.6 L115,7.4 Q124,7.4 125,13.4 L126.4,27 Q126.6,33 119,33.3 L52.6,34.6 Q45.8,34.7 45.5,28.4 L46,14 Z" stroke="#1F1C17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M56,12.4 L55.6,29.8 M112,10.8 L113,29.4 M84,11.4 L84.4,30.4" stroke="#1F1C17" stroke-width="1.2" opacity=".4"/>
+      <!-- body outline, wobbly variable stroke: heavy pass -->
+      <path d="M53,34.6 L52,46.5 Q34.5,55.5 32.4,72 L30.4,179 Q31,198.6 52,199.6 L117,200.8 Q138.6,200 140,181.4 L138.6,73 Q136.8,56 119.6,47.4 L118.6,34.4" stroke="#1F1C17" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- sketchy second pass -->
+      <path d="M55.4,37.6 L54.4,48.4 Q38,57 36,73 L34.4,178 Q35,195.4 53.4,196.4" stroke="#1F1C17" stroke-width="1.2" stroke-linecap="round" opacity=".45"/>
+      <path d="M116.4,37.8 L117.2,48.8 Q134,57.6 135.4,74.4 L136.4,150" stroke="#1F1C17" stroke-width="1.1" stroke-linecap="round" opacity=".35"/>
+      <!-- glass shine -->
+      <path d="M42,78 Q40,110 41,140 M48,68 Q46,74 45.6,82" stroke="#1F1C17" stroke-width="1.6" stroke-linecap="round" opacity=".22"/>
+    </svg>
+
+    <div class="facts">
+      <div class="bignum">
+        <!-- mustard marker swipe -->
+        <svg class="swipe" viewBox="0 0 220 74" preserveAspectRatio="none">
+          <path d="M9,40 Q5,22 30,20 Q85,9 152,13 Q205,15 213,30 Q218,46 194,52 Q128,66 58,61 Q13,60 9,40 Z" fill="#D9A441" opacity=".8"/>
+          <path d="M20,44 Q70,54 160,48 Q196,45 205,34" stroke="#D9A441" stroke-width="9" stroke-linecap="round" fill="none" opacity=".55"/>
+        </svg>
+        1&nbsp;350
+      </div>
+      <div class="caption">RSD left for today, 21&nbsp;Sep</div>
+      <div class="note">
+        +27 days&nbsp;&#183;&nbsp;until 18&nbsp;Oct
+        <svg class="arrow" width="66" height="34" viewBox="0 0 66 34" fill="none" stroke="#2E6B4F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M62,4 Q42,26 10,24"/>
+          <path d="M18,17 L9,24 L19,29"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SHELF ============ -->
+  <div class="shelf-section">
+    <div class="section-label">on the shelf&#8230;</div>
+    <div class="shelf">
+      <!-- Apartment -->
+      <div class="slot">
+        <svg width="80" height="100" viewBox="0 0 80 100" fill="none">
+          <defs><clipPath id="sj1"><path d="M23,42 Q32,32 42,32 Q53,32 62,43 L62,83 Q61,91 52,91 L31,91 Q23,90 23,83 Z"/></clipPath></defs>
+          <g clip-path="url(#sj1)">
+            <path d="M18,54 Q30,47 42,53 Q54,59 66,50 L66,100 L18,100 Z" fill="#2E6B4F"/>
+            <path d="M18,63 Q34,56 50,62 Q60,66 66,61 L66,100 L18,100 Z" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M27,11 Q27.6,7.4 32,7.4 L52,6.6 Q57.6,6.6 58,11 L58.8,20 Q59,24 53.4,24.3 L31.4,25 Q26.6,25 26.6,20.8 Z" stroke="#1F1C17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M31.6,25 L31,32.4 Q20.6,38.4 19.6,48.4 L18.6,84 Q19.4,94 30.6,94.6 L53.4,95 Q65.4,94.4 66,85 L65,48 Q63.8,38.4 54.6,33 L53.4,24.6" stroke="#1F1C17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M33.6,35 Q24,40.4 23,49 L22.4,82" stroke="#1F1C17" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        <div class="jarname">Apartment</div>
+        <div class="jaramount">40&#8239;000</div>
+      </div>
+      <!-- Bills -->
+      <div class="slot">
+        <svg width="80" height="100" viewBox="0 0 80 100" fill="none">
+          <defs><clipPath id="sj2"><path d="M23,42 Q32,32 42,32 Q53,32 62,43 L62,83 Q61,91 52,91 L31,91 Q23,90 23,83 Z"/></clipPath></defs>
+          <g clip-path="url(#sj2)">
+            <path d="M18,64 Q30,57 42,63 Q54,69 66,60 L66,100 L18,100 Z" fill="#2E6B4F"/>
+            <path d="M18,72 Q36,65 52,71 Q60,74 66,70 L66,100 L18,100 Z" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M26.6,11.4 Q27,7.6 31.6,7.6 L52.4,7 Q57.4,7 57.8,11.4 L58.4,20.4 Q58.6,24.2 53,24.5 L31,25.2 Q26.4,25.2 26.3,21 Z" stroke="#1F1C17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M31,25.2 L30.4,32.6 Q20.4,38.6 19.4,48.6 L18.8,84.2 Q19.6,94 30.8,94.4 L53.6,94.8 Q65.2,94.2 65.8,85.2 L65.2,48.2 Q64,38.6 54.8,33.2 L53.6,24.8" stroke="#1F1C17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M56.4,34.6 Q64.4,40 65,49 L65.4,74" stroke="#1F1C17" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        <div class="jarname">Bills</div>
+        <div class="jaramount">16&#8239;000</div>
+      </div>
+      <!-- Gifts -->
+      <div class="slot">
+        <svg width="80" height="100" viewBox="0 0 80 100" fill="none">
+          <defs><clipPath id="sj3"><path d="M23,42 Q32,32 42,32 Q53,32 62,43 L62,83 Q61,91 52,91 L31,91 Q23,90 23,83 Z"/></clipPath></defs>
+          <g clip-path="url(#sj3)">
+            <path d="M18,76 Q30,70 42,75 Q54,80 66,73 L66,100 L18,100 Z" fill="#2E6B4F"/>
+            <path d="M18,83 Q36,77 54,82 L66,81 L66,100 L18,100 Z" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M27,11 Q27.4,7.4 32,7.3 L52,6.8 Q57.4,6.8 57.8,11 L58.6,20.2 Q58.8,24 53.2,24.4 L31.2,25 Q26.6,25 26.5,20.8 Z" stroke="#1F1C17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M31.2,25 L30.6,32.4 Q20.5,38.4 19.5,48.4 L19,84 Q19.8,93.8 31,94.4 L53.8,94.8 Q65.4,94.2 66,85 L65.4,48 Q64.2,38.4 55,33 L53.8,24.6" stroke="#1F1C17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M33.8,35.2 Q24.4,40.6 23.4,49.2 L23,80" stroke="#1F1C17" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        <div class="jarname">Gifts</div>
+        <div class="jaramount">3&#8239;000</div>
+      </div>
+      <!-- Sport -->
+      <div class="slot">
+        <svg width="80" height="100" viewBox="0 0 80 100" fill="none">
+          <defs><clipPath id="sj4"><path d="M23,42 Q32,32 42,32 Q53,32 62,43 L62,83 Q61,91 52,91 L31,91 Q23,90 23,83 Z"/></clipPath></defs>
+          <g clip-path="url(#sj4)">
+            <path d="M18,72 Q30,66 42,71 Q54,76 66,69 L66,100 L18,100 Z" fill="#2E6B4F"/>
+            <path d="M18,80 Q38,73 56,79 L66,77 L66,100 L18,100 Z" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M26.8,11.2 Q27.2,7.5 31.8,7.4 L52.2,7 Q57.6,7 58,11.2 L58.6,20.2 Q58.8,24.1 53.1,24.4 L31.1,25.1 Q26.5,25.1 26.4,20.9 Z" stroke="#1F1C17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M31.1,25.1 L30.5,32.5 Q20.5,38.5 19.5,48.5 L18.9,84.1 Q19.7,93.9 30.9,94.5 L53.7,94.9 Q65.3,94.3 65.9,85.1 L65.3,48.1 Q64.1,38.5 54.9,33.1 L53.7,24.7" stroke="#1F1C17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M56.6,34.8 Q64.6,40.2 65.2,49.2 L65.6,72" stroke="#1F1C17" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        <div class="jarname">Sport</div>
+        <div class="jaramount">3&#8239;500</div>
+      </div>
+    </div>
+    <!-- shelf sketch line -->
+    <svg class="shelfline" width="430" height="20" viewBox="0 0 430 20" fill="none" stroke="#1F1C17" stroke-linecap="round">
+      <path d="M16,9 Q110,4.6 214,7.6 Q322,10.6 414,6.4" stroke-width="2.6" opacity=".85"/>
+      <path d="M22,13.4 Q130,9.6 240,12 Q330,13.8 408,10.6" stroke-width="1" opacity=".35"/>
+      <path d="M30,9 L26,18 M400,7.6 L405,17" stroke-width="1.6" opacity=".5"/>
+    </svg>
+  </div>
+
+  <!-- ============ GOALS ============ -->
+  <div class="goals">
+    <div class="section-label" style="padding:0;">goals for later&#8230;</div>
+
+    <div class="goal">
+      <div class="left">
+        <div class="titlerow">
+          <span class="gname">Trips</span>
+          <span class="gnums">25&#8239;000&nbsp;/&nbsp;100&#8239;000</span>
+        </div>
+        <svg class="bar" width="216" height="30" viewBox="0 0 216 30" fill="none">
+          <g>
+            <path d="M12,9 L52,7.4 Q60,11.6 53.6,15.4 Q60.6,19.6 52.4,23.4 L12,24.6 Z" fill="#2E6B4F"/>
+            <path d="M14,12 L44,10.6 Q50,14.4 45,21 L14,22" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M9.4,8.6 Q8.6,4.4 15.4,4.3 L197,3 Q205.6,3 205.8,9.2 L206.8,20.4 Q207,26.4 198.6,26.6 L14.6,28 Q8.4,28 8.2,21.6 Z" stroke="#1F1C17" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12.4,25 L150,23.8" stroke="#1F1C17" stroke-width=".9" opacity=".3"/>
+        </svg>
+      </div>
+      <span class="circled">
+        <svg viewBox="0 0 130 44" preserveAspectRatio="none" fill="none" stroke="#A6382E" stroke-width="2.1" stroke-linecap="round">
+          <path d="M14,22 Q11,6 65,4 Q122,2 122,20 Q123,37 62,39 Q17,41 15,26"/>
+        </svg>
+        &#8776;&nbsp;8&nbsp;Jun<br>at your pace!
+      </span>
+    </div>
+
+    <div class="goal">
+      <div class="left">
+        <div class="titlerow">
+          <span class="gname">Savings</span>
+          <span class="gnums">12&#8239;000&nbsp;/&nbsp;60&#8239;000</span>
+        </div>
+        <svg class="bar" width="216" height="30" viewBox="0 0 216 30" fill="none">
+          <g>
+            <path d="M12,9.4 L44,8 Q51,12 45.4,16 Q51.6,19.8 44.6,23.6 L12,24.8 Z" fill="#2E6B4F"/>
+            <path d="M14,12.4 L38,11.2 Q43,15 39,21.4 L14,22.4" fill="#245741" opacity=".4"/>
+          </g>
+          <path d="M9.6,9 Q8.8,4.8 15.6,4.6 L196.6,3.4 Q205.2,3.4 205.4,9.6 L206.4,20.8 Q206.6,26.8 198.2,27 L14.8,28.4 Q8.6,28.4 8.4,22 Z" stroke="#1F1C17" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M60,5.6 L200,4.8" stroke="#1F1C17" stroke-width=".9" opacity=".3"/>
+        </svg>
+      </div>
+      <span class="circled">
+        <svg viewBox="0 0 130 44" preserveAspectRatio="none" fill="none" stroke="#A6382E" stroke-width="2.1" stroke-linecap="round">
+          <path d="M15,20 Q14,5 66,3.6 Q121,2.4 121.6,19 Q122,36 63,38.4 Q16,40 14,25"/>
+        </svg>
+        &#8776;&nbsp;14&nbsp;Mar
+      </span>
+    </div>
+  </div>
+
+  <!-- coffee-ring stain, a one-of-a-kind notebook accident -->
+  <svg class="coffeering" width="110" height="96" viewBox="0 0 110 96" fill="none" stroke="#8A5A2B" stroke-linecap="round">
+    <path d="M14,50 Q10,22 52,16 Q96,10 100,42 Q104,74 58,82 Q18,88 14,56" stroke-width="5" opacity=".10"/>
+    <path d="M20,50 Q18,28 53,23 Q92,17 94,44 Q97,68 56,75 Q24,80 21,56" stroke-width="1.6" opacity=".14"/>
+  </svg>
+
+  <!-- ============ FOOTER ============ -->
+  <div class="footer">
+    <span class="total">
+      total planned&nbsp;&#8212;&nbsp;<b>128&#8239;350&nbsp;RSD</b>
+      <svg class="scribble" viewBox="0 0 260 18" preserveAspectRatio="none" fill="none" stroke="#D9A441" stroke-linecap="round">
+        <path d="M6,8 Q66,2.4 128,7 Q192,11.6 252,5.4" stroke-width="4.6" opacity=".85"/>
+        <path d="M14,13.6 Q84,8 156,12.4 Q210,15.4 246,10.6" stroke-width="2.4" opacity=".6"/>
+      </svg>
+    </span>
+  </div>
+
+  <!-- ============ TAB BAR ============ -->
+  <div class="tabbar">
+    <svg class="rule" viewBox="0 0 430 12" preserveAspectRatio="none" fill="none" stroke="#1F1C17" stroke-linecap="round">
+      <path d="M10,7 Q110,3.6 215,6 Q325,8.4 420,5" stroke-width="2" opacity=".7"/>
+      <path d="M18,10 Q140,6.6 260,9 Q350,10.6 414,8" stroke-width=".8" opacity=".25"/>
+    </svg>
+
+    <div class="tab active">
+      <svg class="swipe" viewBox="0 0 50 38" preserveAspectRatio="none">
+        <path d="M4,20 Q3,8 14,7.4 Q28,4 42,8 Q48,10 47,20 Q46,30 34,31.6 Q18,34 7,29 Q3.4,27 4,20 Z" fill="#D9A441" opacity=".55"/>
+      </svg>
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="#1F1C17" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3.6,13.4 L13,3.8 L22.6,13.2"/>
+        <path d="M6.6,11.2 L6.4,20.8 Q6.4,22.4 8.4,22.4 L17.8,22.6 Q19.8,22.6 19.8,20.8 L19.6,11.4"/>
+        <path d="M11.2,22.4 L11.3,16.4 Q11.3,15 12.8,15 Q14.6,15 14.7,16.5 L14.8,22.5"/>
+      </svg>
+      <span class="tlabel">Home</span>
+    </div>
+
+    <div class="tab">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="#1F1C17" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13,3.2 L13.2,12.4"/>
+        <path d="M9.2,9 L13.2,13.2 L17.2,8.8"/>
+        <path d="M4.8,13.6 L4.6,20.8 Q4.6,22.6 6.8,22.6 L19.4,22.8 Q21.6,22.8 21.6,20.9 L21.4,13.4"/>
+      </svg>
+      <span class="tlabel">Income</span>
+    </div>
+
+    <div class="tab">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="#1F1C17" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20.6,13.4 A7.8,7.8 0 1,1 13.4,5.2"/>
+        <path d="M12.6,1.6 L13.6,5.4 L9.8,7"/>
+        <path d="M13,10.4 L13,14 L15.6,15.4" stroke-width="1.6"/>
+      </svg>
+      <span class="tlabel">Revision</span>
+    </div>
+
+    <div class="tab">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="#1F1C17" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4,6.6 L22,6.2"/><circle cx="16.4" cy="6.4" r="2.6"/>
+        <path d="M4,13.2 L22,13"/><circle cx="9" cy="13.1" r="2.6"/>
+        <path d="M4,19.8 L22,19.6"/><circle cx="17.6" cy="19.7" r="2.6"/>
+      </svg>
+      <span class="tlabel">Settings</span>
+    </div>
+  </div>
+  <div class="homedash"></div>
+
+</body>
+</html>
