@@ -55,7 +55,13 @@ final class DashboardPresenter: DashboardPresentationLogic {
                     let months = max(1, (Calendar.current.dateComponents(
                         [.month], from: Date(), to: date).month ?? 0) + 1)
                     if remaining > 0 {
-                        let perMonth = remaining / Decimal(months)
+                        // Whole units, rounded up so the pace actually reaches the goal.
+                        let perMonth = (remaining / Decimal(months) as NSDecimalNumber)
+                            .rounding(accordingToBehavior: NSDecimalNumberHandler(
+                                roundingMode: .up, scale: 0, raiseOnExactness: false,
+                                raiseOnOverflow: false, raiseOnUnderflow: false,
+                                raiseOnDivideByZero: false))
+                            .decimalValue
                         text += String(localized: " · \(MoneyFormat.amount(perMonth))/mo")
                     }
                 }

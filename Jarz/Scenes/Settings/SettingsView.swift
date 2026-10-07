@@ -185,7 +185,24 @@ struct SettingsView: View {
             .toolbar(.hidden, for: .navigationBar)
             .keyboardDoneButton()
             .environment(\.editMode, $editMode)
-            .onAppear { store.interactor?.load(request: .init()) }
+            .onAppear {
+                store.interactor?.load(request: .init())
+                #if DEBUG
+                // Verification hooks: `-DemoSnapshot 1` deletes the food jar and
+                // opens the restore list; `-RestoreLatestSnapshot 1` restores it.
+                let worker = StorageWorker.shared
+                if UserDefaults.standard.bool(forKey: "DemoSnapshot"),
+                   let foodId = worker.settings().foodCategoryId {
+                    store.interactor?.deleteCategory(request: .init(id: foodId))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { showSnapshots = true }
+                }
+                if UserDefaults.standard.bool(forKey: "RestoreLatestSnapshot"),
+                   let latest = worker.snapshots().first(where: { $0.kind == .deleteJar }) {
+                    _ = worker.restoreSnapshot(id: latest.id)
+                    store.interactor?.load(request: .init())
+                }
+                #endif
+            }
             .onChange(of: store.currencySymbol) { store.persistSettings() }
             .onChange(of: store.dailyFoodText) { store.persistSettings() }
             .onChange(of: store.apartmentText) { store.persistSettings() }
@@ -235,6 +252,15 @@ struct SettingsView: View {
                     Reminders.reschedule(worker: .shared)
                 }
             }
+            .sheet(isPresented: $showSnapshots) {
+                SnapshotsSheet(
+                    onRestored: {
+                        showSnapshots = false
+                        store.interactor?.load(request: .init())
+                    },
+                    onDone: { showSnapshots = false }
+                )
+            }
             .sheet(item: $exportURL) { item in
                 ShareSheet(items: [item.url])
             }
@@ -282,6 +308,7 @@ struct SettingsView: View {
 
     @State private var showExportDialog = false
     @State private var showRecurring = false
+    @State private var showSnapshots = false
     @State private var showImportPicker = false
     @State private var pendingImportData: Data?
     @State private var showImportResult = false
@@ -388,6 +415,7 @@ struct SettingsView: View {
                 Button("CSV (spreadsheet)") { exportData(csv: true) }
             }
         settingsButton("Import data", icon: "square.and.arrow.down") { showImportPicker = true }
+        settingsButton("Restore previous state", icon: "clock.arrow.circlepath") { showSnapshots = true }
     }
 
     private var aboutRows: some View {

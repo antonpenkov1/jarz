@@ -31,6 +31,7 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
     func realignFoodPlan(request: CategoryDetail.RealignFoodPlan.Request) {
         var settings = worker.settings()
         guard settings.foodCategoryId == categoryId, settings.dailyFoodAmount > 0 else { return }
+        worker.takeSnapshot(.recalculateFood)
         settings.foodPlanEnd = FoodMath.realignedPlanEnd(
             balance: worker.balance(of: categoryId),
             daily: settings.dailyFoodAmount

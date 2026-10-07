@@ -409,6 +409,7 @@ final class StorageWorker {
 
     func deleteCategory(id: UUID) {
         guard let model = categoryModel(id: id) else { return }
+        takeSnapshot(.deleteJar, detail: model.name)
         let fetch = FetchDescriptor<JarTransaction>(predicate: #Predicate { $0.categoryId == id })
         for transaction in (try? context.fetch(fetch)) ?? [] {
             context.delete(transaction)
@@ -519,12 +520,36 @@ final class StorageWorker {
         return bom + body
     }
 
+    // MARK: Automatic snapshots
+
+    private let snapshotStore = SnapshotStore(
+        directory: URL.applicationSupportDirectory.appendingPathComponent("Snapshots", isDirectory: true))
+
+    /// Full backup taken right before a destructive action.
+    func takeSnapshot(_ kind: SnapshotKind, detail: String = "") {
+        guard let backup = exportJSON() else { return }
+        snapshotStore.save(backup: backup, kind: kind, detail: detail)
+    }
+
+    func snapshots() -> [SnapshotInfo] {
+        snapshotStore.list()
+    }
+
+    /// Replaces everything with the snapshot. The current state is snapshotted
+    /// first, so a restore can itself be undone.
+    func restoreSnapshot(id: String) -> Bool {
+        guard let backup = snapshotStore.backup(id: id) else { return false }
+        takeSnapshot(.restore)
+        return importJSON(backup, snapshotBefore: false)
+    }
+
     /// Restores a backup produced by `exportJSON`, replacing everything.
     /// Returns false if the data doesn't decode as a Jarz backup.
-    func importJSON(_ data: Data) -> Bool {
+    func importJSON(_ data: Data, snapshotBefore: Bool = true) -> Bool {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let payload = try? decoder.decode(BackupPayload.self, from: data) else { return false }
+        if snapshotBefore { takeSnapshot(.importData) }
 
         for model in (try? context.fetch(FetchDescriptor<JarTransaction>())) ?? [] { context.delete(model) }
         for model in (try? context.fetch(FetchDescriptor<JarCategory>())) ?? [] { context.delete(model) }
