@@ -61,6 +61,43 @@ final class FoodMathTests: XCTestCase {
         assertSameDay(plan.dayDate, today)
     }
 
+    func testRealignAfterDeletedIncome() {
+        let today = august(10)
+        // Plan ran to Aug 30 on 21 000; an accidental +31 000 income stretched
+        // it to Sep 30, then that income row was deleted: balance is back to
+        // 20 600 but the horizon still says Sep 30 → today is deep negative.
+        let stretched = FoodMath.extendPlanEnd(current: august(30), allocation: 31000,
+                                               daily: daily, now: today)
+        let broken = FoodMath.plan(balance: 20600, daily: daily, planEnd: stretched, now: today)!
+        XCTAssertTrue(broken.available < 0 || broken.isAhead)
+
+        // Recalculate: today keeps the 600 remainder, not 1 600.
+        let realigned = FoodMath.realignedPlanEnd(balance: 20600, daily: daily, now: today)
+        assertSameDay(realigned, august(30)) // 10th + 20 full days
+        let plan = FoodMath.plan(balance: 20600, daily: daily, planEnd: realigned, now: today)!
+        XCTAssertEqual(plan.available, 600)
+        XCTAssertFalse(plan.isAhead)
+        XCTAssertEqual(plan.daysLeft, 20)
+    }
+
+    func testRealignEvenBalanceKeepsFullDayToday() {
+        let today = august(10)
+        let realigned = FoodMath.realignedPlanEnd(balance: 30000, daily: daily, now: today)
+        let plan = FoodMath.plan(balance: 30000, daily: daily, planEnd: realigned, now: today)!
+        XCTAssertEqual(plan.available, 1000)
+        XCTAssertEqual(plan.daysLeft, 29)
+    }
+
+    func testRealignSmallOrEmptyBalance() {
+        let today = august(10)
+        let small = FoodMath.plan(balance: 400, daily: daily,
+                                  planEnd: FoodMath.realignedPlanEnd(balance: 400, daily: daily, now: today),
+                                  now: today)!
+        XCTAssertEqual(small.available, 400)
+        XCTAssertEqual(small.daysLeft, 0)
+        assertSameDay(FoodMath.realignedPlanEnd(balance: -200, daily: daily, now: today), today)
+    }
+
     func testCarryOverToTomorrow() {
         // Underspending rolls into the next day: 1000 + 350 = 1350.
         let planEnd = FoodMath.extendPlanEnd(current: nil, allocation: 30000, daily: daily, now: august(9))

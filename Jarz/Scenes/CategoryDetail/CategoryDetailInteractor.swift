@@ -8,6 +8,7 @@ protocol CategoryDetailBusinessLogic {
     func undoDeleteTransaction()
     func setGoal(request: CategoryDetail.SetGoal.Request)
     func transfer(request: CategoryDetail.Transfer.Request)
+    func realignFoodPlan(request: CategoryDetail.RealignFoodPlan.Request)
 }
 
 @MainActor
@@ -24,6 +25,17 @@ final class CategoryDetailInteractor: CategoryDetailBusinessLogic {
 
     func setGoal(request: CategoryDetail.SetGoal.Request) {
         worker.setGoal(categoryId: categoryId, amount: request.amount, date: request.date)
+        load(request: .init())
+    }
+
+    func realignFoodPlan(request: CategoryDetail.RealignFoodPlan.Request) {
+        var settings = worker.settings()
+        guard settings.foodCategoryId == categoryId, settings.dailyFoodAmount > 0 else { return }
+        settings.foodPlanEnd = FoodMath.realignedPlanEnd(
+            balance: worker.balance(of: categoryId),
+            daily: settings.dailyFoodAmount
+        )
+        worker.saveSettings(settings)
         load(request: .init())
     }
 

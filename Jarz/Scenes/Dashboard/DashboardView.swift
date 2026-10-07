@@ -233,6 +233,9 @@ struct DashboardView: View {
             worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 30000, note: "Income", date: today)
             worker.addTransaction(categoryId: foodId, kind: .topUp, amount: 2000, note: "Cashback", date: today)
             settings.foodPlanEnd = calendar.date(byAdding: .day, value: 29, to: today)
+        case "broken": // deleted income row: horizon still stretched, today deep negative
+            worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 20600, note: "Income", date: today)
+            settings.foodPlanEnd = calendar.date(byAdding: .day, value: 50, to: today)
         case "showcase": // marketing screenshots: every jar filled, healthy food day
             worker.addTransaction(categoryId: foodId, kind: .allocation, amount: 31000, note: "Income", date: yesterday)
             worker.addTransaction(categoryId: foodId, kind: .expense, amount: 650, note: "Groceries", date: yesterday)

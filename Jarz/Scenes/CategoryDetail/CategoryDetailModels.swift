@@ -84,4 +84,8 @@ enum CategoryDetail {
             let amount: Decimal
         }
     }
+
+    enum RealignFoodPlan {
+        struct Request {}
+    }
 }

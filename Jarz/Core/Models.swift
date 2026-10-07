@@ -194,6 +194,21 @@ enum FoodMath {
         return days
     }
 
+    /// Re-anchors the plan to today from the balance alone, so today's money
+    /// lands in (0, daily]: 30 600 at 1 000/day → 600 today + 30 full days,
+    /// never 1 600 today. A manual repair for when the fixed horizon no
+    /// longer matches the money (e.g. an income allocation was deleted).
+    static func realignedPlanEnd(balance: Decimal, daily: Decimal, now: Date = Date()) -> Date? {
+        guard daily > 0 else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        guard balance > 0 else { return today }
+        let fullDays = wholeDays(balance / daily)
+        let hasRemainder = balance - Decimal(fullDays) * daily > 0
+        let daysAfterToday = hasRemainder ? fullDays : fullDays - 1
+        return calendar.date(byAdding: .day, value: max(0, daysAfterToday), to: today)
+    }
+
     /// Income moves the horizon by exactly the allocated amount: one day per
     /// full daily budget. An active plan is EXTENDED from its fixed end date
     /// (surplus money stays as today's cushion instead of stretching the

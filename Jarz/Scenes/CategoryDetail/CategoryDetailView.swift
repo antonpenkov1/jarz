@@ -114,6 +114,30 @@ struct CategoryDetailView: View {
                         }
                         .padding(.top, 18)
                     }
+                    if store.viewModel.foodLine != nil {
+                        Button {
+                            showRealignConfirm = true
+                        } label: {
+                            Label("Recalculate from today", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Theme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 16)
+                        .confirmationDialog(
+                            "Recalculate from today?",
+                            isPresented: $showRealignConfirm,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Recalculate") {
+                                store.interactor?.realignFoodPlan(request: .init())
+                                Haptics.success()
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("The plan end date is recalculated from the current balance: today keeps at most one daily budget, the rest is spread over the following days.")
+                        }
+                    }
                     SectionLabel("History")
                         .padding(.top, 36)
                 }
@@ -204,10 +228,21 @@ struct CategoryDetailView: View {
                 onCancel: { showTransferSheet = false }
             )
         }
-        .onAppear { store.interactor?.load(request: .init()) }
+        .onAppear {
+            store.interactor?.load(request: .init())
+            #if DEBUG
+            // Verification hook: `-RealignFood 1` runs the recalculate action.
+            if UserDefaults.standard.bool(forKey: "RealignFood") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    store.interactor?.realignFoodPlan(request: .init())
+                }
+            }
+            #endif
+        }
     }
 
     @State private var showUndoToast = false
+    @State private var showRealignConfirm = false
     @State private var showTransferSheet = false
     @State private var searchText = ""
 

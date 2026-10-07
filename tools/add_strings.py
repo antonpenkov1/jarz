@@ -12,6 +12,18 @@ LANGS = ["ru", "sr-Latn", "es", "it", "fr", "de"]
 
 # key: [ru, sr-Latn, es, it, fr, de]
 NEW = {
+    "Recalculate from today": ["Пересчитать от сегодня", "Preračunaj od danas", "Recalcular desde hoy",
+                               "Ricalcola da oggi", "Recalculer à partir d’aujourd’hui", "Ab heute neu berechnen"],
+    "Recalculate from today?": ["Пересчитать от сегодня?", "Preračunati od danas?", "¿Recalcular desde hoy?",
+                                "Ricalcolare da oggi?", "Recalculer à partir d’aujourd’hui ?", "Ab heute neu berechnen?"],
+    "Recalculate": ["Пересчитать", "Preračunaj", "Recalcular", "Ricalcola", "Recalculer", "Neu berechnen"],
+    "The plan end date is recalculated from the current balance: today keeps at most one daily budget, the rest is spread over the following days.": [
+        "Дата конца плана пересчитается по текущему балансу: на сегодня останется не больше дневной нормы, остальное распределится по следующим дням.",
+        "Datum kraja plana se preračunava prema trenutnom stanju: za danas ostaje najviše jedan dnevni budžet, ostatak se raspoređuje na naredne dane.",
+        "La fecha de fin del plan se recalcula con el saldo actual: hoy se queda como máximo un presupuesto diario y el resto se reparte en los días siguientes.",
+        "La data di fine piano viene ricalcolata dal saldo attuale: oggi resta al massimo un budget giornaliero, il resto si distribuisce sui giorni seguenti.",
+        "La date de fin du plan est recalculée à partir du solde actuel : aujourd’hui garde au plus un budget quotidien, le reste est réparti sur les jours suivants.",
+        "Das Planende wird aus dem aktuellen Saldo neu berechnet: Heute bleibt höchstens ein Tagesbudget, der Rest verteilt sich auf die folgenden Tage."],
     "Choose format": ["Выбери формат", "Izaberi format", "Elige formato", "Scegli il formato",
                       "Choisissez le format", "Format wählen"],
     "JSON (full backup)": ["JSON (полный бэкап)", "JSON (puna kopija)", "JSON (copia completa)",
